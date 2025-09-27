@@ -1,4 +1,5 @@
 import React from 'react';
+import SpaceScene from './SpaceScene';
 import './HomeScreen.css';
 
 const HomeScreen = () => {
@@ -14,6 +15,9 @@ const HomeScreen = () => {
 
   return (
     <div className="home-screen">
+      {/* Three.js Space Scene Background */}
+      <SpaceScene />
+      
       {/* Navbar */}
       <nav className="navbar">
         <div className="nav-brand">Meteor Madness</div>
