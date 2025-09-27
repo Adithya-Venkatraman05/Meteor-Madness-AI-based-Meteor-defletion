@@ -723,27 +723,40 @@ async def analyze_from_sbdb_data(sbdb_data: dict):
         
         # Extract diameter (convert km to meters)
         diameter = None
-        for param in phys_par:
-            if param.get("name") == "diameter":
-                diameter = float(param.get("value", 0)) * 1000  # Convert km to m
-                break
-        
-        if not diameter:
-            raise HTTPException(status_code=400, detail="Diameter not found in SBDB data")
-        
-        # Extract other physical parameters
+        mass = None
+        density = None
         albedo = None
         rotation_period = None
         absolute_mag = None
+        color_b_v = None
+        color_u_b = None
         
         for param in phys_par:
             param_name = param.get("name", "").lower()
-            if "albedo" in param_name:
-                albedo = float(param.get("value", 0))
-            elif "rotation" in param_name:
-                rotation_period = float(param.get("value", 0))
-            elif "h" in param_name or "magnitude" in param_name:
-                absolute_mag = float(param.get("value", 20))
+            param_value = param.get("value")
+            
+            if not param_value:
+                continue
+                
+            try:
+                if param_name == "diameter":
+                    diameter = float(param_value) * 1000  # Convert km to meters
+                elif "albedo" in param_name:
+                    albedo = float(param_value)
+                elif "rotation" in param_name or "rot_per" in param_name:
+                    rotation_period = float(param_value)
+                elif param_name == "h" or "magnitude" in param_name:
+                    absolute_mag = float(param_value)
+                elif param_name == "mass":
+                    mass = float(param_value)
+                elif param_name == "density":
+                    density = float(param_value)
+                elif "b-v" in param_name:
+                    color_b_v = float(param_value)
+                elif "u-b" in param_name:
+                    color_u_b = float(param_value)
+            except (ValueError, TypeError):
+                continue
         
         # Extract orbital elements
         elements = orbit.get("elements", [])
@@ -753,40 +766,57 @@ async def analyze_from_sbdb_data(sbdb_data: dict):
             "e": "eccentricity",
             "a": "semi_major_axis", 
             "q": "perihelion_distance",
+            "Q": "aphelion_distance",
             "i": "inclination",
             "om": "longitude_ascending_node",
             "w": "argument_perihelion",
             "ma": "mean_anomaly",
-            "per": "orbital_period"
+            "per": "orbital_period",
+            "n": "mean_motion",
+            "moid": "moid"
         }
         
         for element in elements:
             symbol = element.get("name")
             if symbol in element_mapping:
-                orbital_params[element_mapping[symbol]] = float(element.get("value", 0))
+                try:
+                    orbital_params[element_mapping[symbol]] = float(element.get("value", 0))
+                except (ValueError, TypeError):
+                    continue
         
-        # Build query parameters for the main analysis endpoint
+        # Build comprehensive parameters for the frontend
         analysis_params = {
             "diameter": diameter,
+            "mass": mass,
+            "density": density,
             "absolute_magnitude": absolute_mag,
             "geometric_albedo": albedo,
             "rotation_period": rotation_period,
+            "color_b_v": color_b_v,
+            "color_u_b": color_u_b,
             **orbital_params
         }
         
-        # Remove None values
-        analysis_params = {k: v for k, v in analysis_params.items() if v is not None}
+        # Remove None values but keep track of what was available
+        available_params = {k: v for k, v in analysis_params.items() if v is not None}
+        all_possible_params = list(analysis_params.keys())
         
-        logger.info(f"Extracted parameters from SBDB: diameter={diameter}m, orbital_elements={len(orbital_params)}")
+        logger.info(f"Extracted parameters from SBDB: diameter={diameter}m, available_params={len(available_params)}/{len(all_possible_params)}")
         
-        # Call the main analysis function with extracted parameters
-        # Note: In a real implementation, you might want to call the analysis function directly
         return {
             "success": True,
             "message": "SBDB data processed successfully",
-            "extracted_parameters": analysis_params,
+            "extracted_parameters": available_params,
+            "all_possible_parameters": all_possible_params,
             "sbdb_object_name": obj_data.get("fullname", "Unknown"),
-            "analysis_note": "Use the /physics/impact-analysis endpoint with these parameters for full analysis"
+            "parameter_summary": {
+                "physical_parameters_found": sum(1 for p in ["diameter", "mass", "density", "absolute_magnitude", "geometric_albedo", "rotation_period"] if p in available_params),
+                "orbital_elements_found": sum(1 for p in ["eccentricity", "semi_major_axis", "inclination", "perihelion_distance"] if p in available_params),
+                "total_parameters_available": len(available_params),
+                "total_parameters_possible": len(all_possible_params)
+            },
+            "analysis_ready": "diameter" in available_params,
+            "analysis_note": "Parameters are ready for impact analysis. Use /physics/impact-analysis endpoint for full analysis."
         }
         
     except Exception as e:

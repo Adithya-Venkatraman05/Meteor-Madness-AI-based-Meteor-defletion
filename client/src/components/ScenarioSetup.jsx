@@ -51,6 +51,10 @@ const ScenarioSetup = () => {
 
   const [errors, setErrors] = useState({});
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedAsteroid, setSelectedAsteroid] = useState(null);
+  const [asteroidParameters, setAsteroidParameters] = useState({});
+  const [loadingParameters, setLoadingParameters] = useState(false);
+  const [parameterErrors, setParameterErrors] = useState({});
 
   // Check for coordinates from globe screen on component load
   useEffect(() => {
@@ -72,6 +76,268 @@ const ScenarioSetup = () => {
       }
     }
   }, []);
+
+  // Process asteroid data directly from localStorage when component loads
+  useEffect(() => {
+    const processAsteroidData = () => {
+      try {
+        const asteroidData = localStorage.getItem('selectedAsteroidDetails');
+        console.log('Raw asteroid data from localStorage:', asteroidData);
+        
+        if (!asteroidData) {
+          console.log('No asteroid data found in localStorage');
+          return;
+        }
+
+        const asteroid = JSON.parse(asteroidData);
+        console.log('Parsed asteroid data:', asteroid);
+        console.log('Asteroid data structure:', {
+          hasData: !!asteroid.data,
+          hasObject: !!asteroid.data?.object,
+          hasPhysPar: !!asteroid.data?.phys_par,
+          hasOrbit: !!asteroid.data?.orbit,
+          objectName: asteroid.data?.object?.fullname,
+          physParLength: asteroid.data?.phys_par?.length || 0,
+          orbitElements: asteroid.data?.orbit?.elements?.length || 0,
+          moid: asteroid.orbit?.moid || 0
+        });
+        
+        setSelectedAsteroid(asteroid);
+        setLoadingParameters(true);
+
+        // Extract parameters directly from the SBDB data structure
+        var extractedParams = extractParametersFromSBDB(asteroid);
+        console.log('Extracted parameters:', extractedParams);
+        setAsteroidParameters(extractedParams);
+        
+        // Pre-fill scenario data with extracted parameters if available
+        setScenarioData(prev => ({
+          ...prev,
+          velocity_kms: extractedParams.typical_velocity || prev.velocity_kms,
+          angle_degrees: extractedParams.typical_angle || prev.angle_degrees
+        }));
+
+      } catch (error) {
+        console.error('Error processing asteroid data:', error);
+        setParameterErrors({ general: 'Error processing asteroid data: ' + error.message });
+      } finally {
+        setLoadingParameters(false);
+      }
+    };
+
+    processAsteroidData();
+  }, []);
+
+  // Function to extract parameters directly from SBDB data
+  const extractParametersFromSBDB = (asteroidData) => {
+    console.log('Starting parameter extraction from:', asteroidData);
+    console.log('Asteroid data type:', typeof asteroidData);
+    console.log('Asteroid data keys:', Object.keys(asteroidData || {}));
+    
+    const params = {};
+    
+    try {
+      // Handle different possible data structures
+      let dataRoot = asteroidData;
+      
+      // Case 1: Full API response with wrapper
+      if (asteroidData.success && asteroidData.data) {
+        console.log('Found API response wrapper, extracting data...');
+        dataRoot = asteroidData.data;
+      } 
+      // Case 2: Data wrapper exists (but no success flag)
+      else if (asteroidData.data && typeof asteroidData.data === 'object') {
+        console.log('Found data wrapper, extracting data...');
+        dataRoot = asteroidData.data;
+      }
+      // Case 3: Direct SBDB data (object, phys_par, orbit at top level)
+      else if (asteroidData.object || asteroidData.phys_par || asteroidData.orbit) {
+        console.log('Found direct SBDB data structure...');
+        dataRoot = asteroidData;
+      }
+      // Case 4: Fallback - use asteroidData as is
+      else {
+        console.log('Using asteroidData as-is...');
+        dataRoot = asteroidData;
+      }
+      
+      console.log('Using data root:', dataRoot);
+      console.log('Data root keys:', Object.keys(dataRoot || {}));
+      
+      const objData = dataRoot?.object || {};
+      const physPar = dataRoot?.phys_par || [];
+      const orbitData = dataRoot?.orbit || {};  
+      const elements = orbitData?.elements || [];
+      // Get MOID from orbit data, not from top level
+      const moid = orbitData?.moid || 0;
+      console.log('Data structure analysis:', {
+        objData: !!objData,
+        objDataKeys: Object.keys(objData),
+        physParCount: physPar.length,
+        orbitData: !!orbitData,
+        orbitDataKeys: Object.keys(orbitData),
+        elementsCount: elements.length
+      });
+
+      // Extract basic object info
+      params.name = objData.fullname || objData.full_name || 'Unknown Asteroid';
+      params.designation = objData.des || objData.designation || '';
+
+      console.log('Basic info extracted:', { name: params.name, designation: params.designation });
+
+      // Essential physical parameters we always need
+      physPar.forEach((param, index) => {
+        console.log(`Processing phys_par[${index}]:`, param);
+        const name = param.name?.toLowerCase();
+        const value = parseFloat(param.value);
+        
+        if (isNaN(value)) {
+          console.log(`Skipping parameter ${name} - invalid value:`, param.value);
+          return;
+        }
+
+        switch (name) {
+          case 'diameter':
+          case 'diam':
+            params.diameter = value * 1000; // Convert km to meters
+            console.log('Diameter extracted:', params.diameter);
+            break;
+          case 'h': // Absolute magnitude
+          case 'abs_mag':
+            params.absolute_magnitude = value;
+            console.log('Absolute magnitude extracted:', params.absolute_magnitude);
+            break;
+          case 'albedo':
+          case 'geometric_albedo':
+          case 'pv':
+            params.geometric_albedo = value;
+            console.log('Geometric albedo extracted:', params.geometric_albedo);
+            break;
+          case 'density':
+            params.density = value * 1000; // Convert g/cm³ to kg/m³
+            console.log('Density extracted:', params.density);
+            break;
+          case 'mass':
+            params.mass = value;
+            console.log('Mass extracted:', params.mass);
+            break;
+          case 'rotation_period':
+          case 'rot_per':
+          case 'per':
+            params.rotation_period = value;
+            console.log('Rotation period extracted:', params.rotation_period);
+            break;
+          default:
+            console.log('Unhandled physical parameter:', name, value);
+            break;
+        }
+      });
+
+      // Add MOID parameter to the extracted parameters
+      if (moid > 0) {
+        params.moid = moid;
+        console.log('MOID extracted:', params.moid);
+      }
+
+      // Essential orbital elements we always need
+      const orbitalMap = {
+        'e': 'eccentricity',
+        'a': 'semi_major_axis',
+        'q': 'perihelion_distance',
+        'ad': 'aphelion_distance', // Updated to match your data structure
+        'i': 'inclination',
+        'om': 'longitude_ascending_node',
+        'w': 'argument_perihelion',
+        'ma': 'mean_anomaly',
+        'per': 'orbital_period',
+        'n': 'mean_motion'
+      };
+
+      elements.forEach((element, index) => {
+        console.log(`Processing orbit element[${index}]:`, element);
+        const symbol = element.name;
+        const value = parseFloat(element.value);
+        const paramName = orbitalMap[symbol];
+        
+        if (paramName && !isNaN(value)) {
+          params[paramName] = value;
+          console.log(`Orbital parameter ${paramName} = ${value}`);
+        } else {
+          console.log(`Skipped orbital element: ${symbol} = ${element.value}`);
+        }
+      });
+
+      // Calculate typical impact parameters based on orbital characteristics
+      if (params.semi_major_axis && params.eccentricity) {
+        // Estimate typical impact velocity (simplified calculation)
+        const earthVelocity = 29.78; // km/s
+        const asteroidVelocity = Math.sqrt(398600.4418 / (params.semi_major_axis * 149597870.7));
+        params.typical_velocity = Math.sqrt(earthVelocity * earthVelocity + asteroidVelocity * asteroidVelocity);
+      }
+
+      // Estimate typical impact angle based on orbital inclination
+      if (params.inclination !== undefined) {
+        params.typical_angle = Math.min(90, Math.max(15, params.inclination * 0.5 + 30));
+      }
+
+      // Set default composition based on asteroid type or characteristics
+      if (params.geometric_albedo !== undefined) {
+        if (params.geometric_albedo > 0.2) {
+          params.composition = 'METALLIC';
+        } else if (params.geometric_albedo < 0.05) {
+          params.composition = 'CARBONACEOUS';
+        } else {
+          params.composition = 'ROCKY';
+        }
+      } else {
+        params.composition = 'ROCKY'; // Default
+      }
+
+      // Estimate density if not available
+      if (!params.density && params.composition) {
+        const densityMap = {
+          'ROCKY': 2500,
+          'METALLIC': 5000,
+          'CARBONACEOUS': 1500,
+          'ICY': 900
+        };
+        params.density = densityMap[params.composition] || 2500;
+      }
+
+      // Calculate mass if diameter is available but mass isn't
+      if (params.diameter && !params.mass && params.density) {
+        const radius = params.diameter / 2;
+        const volume = (4/3) * Math.PI * Math.pow(radius, 3);
+        params.mass = volume * params.density;
+        console.log('Calculated mass from diameter and density:', params.mass);
+      }
+
+      // Add some default values if critical parameters are missing
+      if (!params.composition) {
+        params.composition = 'ROCKY'; // Default to rocky
+        console.log('Set default composition: ROCKY');
+      }
+
+      if (!params.density && params.composition) {
+        const densityMap = {
+          'ROCKY': 2500,
+          'METALLIC': 5000,
+          'CARBONACEOUS': 1500,
+          'ICY': 900
+        };
+        params.density = densityMap[params.composition] || 2500;
+        console.log('Set default density based on composition:', params.density);
+      }
+
+    } catch (error) {
+      console.error('Error extracting parameters:', error);
+      console.error('Error stack:', error.stack);
+    }
+
+    console.log('Final extracted parameters:', params);
+    console.log('Parameters count:', Object.keys(params).length);
+    return params;
+  };
 
   // Predefined locations for quick selection
   const quickLocations = [
@@ -109,20 +375,32 @@ const ScenarioSetup = () => {
       newErrors.angle_degrees = 'Angle must be between 5 and 90 degrees';
     }
 
+    // Validate asteroid parameters if asteroid is selected
+    if (selectedAsteroid && asteroidParameters.diameter && asteroidParameters.diameter <= 0) {
+      newErrors.diameter = 'Diameter must be greater than 0';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleLocationSelect = (location) => {
-    // Save the selected location coordinates to localStorage
-    const coordinates = {
-      lat: location.lat,
-      lng: location.lng
-    };
-    localStorage.setItem('currentImpactLocation', JSON.stringify(coordinates));
+    // Set the selected location and update the form data
+    setSelectedLocation(location);
+    setScenarioData(prev => ({
+      ...prev,
+      impact_location: {
+        latitude: location.lat,
+        longitude: location.lng
+      }
+    }));
     
-    // Navigate to globe screen with pre-filled coordinates
-    navigate('/simulation/globe');
+    // Clear any existing errors for the location fields
+    setErrors(prev => ({
+      ...prev,
+      latitude: undefined,
+      longitude: undefined
+    }));
   };
 
   const handleInputChange = (field, value) => {
@@ -154,10 +432,20 @@ const ScenarioSetup = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // Save current coordinates and navigate to globe screen for visual confirmation
+      // Prepare complete simulation data including asteroid parameters
+      const simulationData = {
+        ...scenarioData,
+        asteroid_parameters: asteroidParameters,
+        selected_asteroid: selectedAsteroid
+      };
+      
+      // Save complete simulation data
+      localStorage.setItem('simulationData', JSON.stringify(simulationData));
+      
+      // Save current coordinates for globe screen
       const coordinates = {
-        lat: scenarioData.impact_location.latitude,
-        lng: scenarioData.impact_location.longitude
+        lat: parseFloat(scenarioData.impact_location.latitude),
+        lng: parseFloat(scenarioData.impact_location.longitude)
       };
       localStorage.setItem('currentImpactLocation', JSON.stringify(coordinates));
       navigate('/simulation/globe');
@@ -173,8 +461,46 @@ const ScenarioSetup = () => {
           <p className="scenario-subtitle">Define impact location and mitigation strategy</p>
           
           <div className="asteroid-summary">
-            <h3>Selected Asteroid: Sample Asteroid</h3>
-            <p>Configure your simulation parameters below</p>
+            <h3>Selected Asteroid: {
+              selectedAsteroid?.object?.fullname || 
+              selectedAsteroid?.object?.full_name ||
+              selectedAsteroid?.data?.object?.fullname || 
+              selectedAsteroid?.data?.object?.full_name ||
+              selectedAsteroid?.asteroid_name ||
+              (selectedAsteroid ? 'Unknown Asteroid' : 'Loading...')
+            }</h3>
+            {loadingParameters ? (
+              <p>🔄 Analyzing asteroid parameters from NASA SBDB...</p>
+            ) : selectedAsteroid ? (
+              <div className="asteroid-info">
+                <p>Configure your simulation parameters below. Parameters extracted from NASA SBDB are pre-filled but can be edited.</p>
+                <div className="data-status">
+                  <p><strong>Data Source:</strong> NASA SBDB</p>
+                  <p><strong>Parameters Found:</strong> {Object.keys(asteroidParameters).length}</p>
+                  <p><strong>Search Name:</strong> {selectedAsteroid.search_name || selectedAsteroid?.object?.des || 'N/A'}</p>
+                  {selectedAsteroid.success === false && (
+                    <p style={{color: '#ff6b6b'}}>⚠️ Limited data available for this asteroid</p>
+                  )}
+                </div>
+                {parameterErrors.general && (
+                  <div className="parameter-error">⚠️ {parameterErrors.general}</div>
+                )}
+              </div>
+            ) : (
+              <div className="no-asteroid">
+                <p>No asteroid selected. <Link to="/simulation/predefined">Select an asteroid</Link> to continue.</p>
+                <button 
+                  onClick={() => {
+                    // Clear any stale data and force reload
+                    localStorage.removeItem('selectedAsteroidDetails');
+                    window.location.href = '/simulation/predefined';
+                  }}
+                  className="reload-btn"
+                >
+                  🔄 Select New Asteroid
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -236,31 +562,212 @@ const ScenarioSetup = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="map-selection">
-                <h4>Or select visually:</h4>
-                <button
-                  type="button"
-                  className="map-btn"
-                  onClick={() => {
-                    // Save current coordinates to localStorage for globe screen
-                    const currentCoords = {
-                      lat: scenarioData.impact_location.latitude,
-                      lng: scenarioData.impact_location.longitude
-                    };
-                    if (currentCoords.lat && currentCoords.lng) {
-                      localStorage.setItem('currentImpactLocation', JSON.stringify(currentCoords));
-                    }
-                    navigate('/simulation/globe');
-                  }}
-                >
-                  🌍 Locate on Map
-                </button>
-              </div>
             </div>
           </div>
 
-          {/* Impact Parameters */}
+          {/* Asteroid Parameters from SBDB */}
+          {selectedAsteroid && (
+            <div className="form-section">
+              <h3 className="section-title">Asteroid Parameters</h3>
+              
+              <div className="essential-parameters">
+                <h4>Essential Physical Properties</h4>
+                <div className="parameter-grid">
+                  <div className="parameter-card">
+                    <label>Diameter (meters) *</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      value={asteroidParameters.diameter || ''}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, diameter: parseFloat(e.target.value) || 0 }))}
+                      placeholder="Enter diameter in meters"
+                      className={asteroidParameters.diameter ? 'prefilled' : 'empty'}
+                      required
+                    />
+                    <span className="parameter-status">
+                      {asteroidParameters.diameter ? '✓ From NASA SBDB' : '⚠️ Required - Please enter'}
+                    </span>
+                  </div>
+
+                  <div className="parameter-card">
+                    <label>Composition</label>
+                    <select
+                      value={asteroidParameters.composition || 'ROCKY'}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, composition: e.target.value }))}
+                      className={asteroidParameters.composition ? 'prefilled' : 'empty'}
+                    >
+                      <option value="ROCKY">Rocky (S-type)</option>
+                      <option value="METALLIC">Metallic (M-type)</option>
+                      <option value="CARBONACEOUS">Carbonaceous (C-type)</option>
+                      <option value="ICY">Icy</option>
+                    </select>
+                    <span className="parameter-status">
+                      {asteroidParameters.geometric_albedo ? '✓ Estimated from albedo' : '🔧 Default selection'}
+                    </span>
+                  </div>
+
+                  <div className="parameter-card">
+                    <label>Density (kg/m³)</label>
+                    <input
+                      type="number"
+                      step="100"
+                      min="500"
+                      max="8000"
+                      value={asteroidParameters.density || ''}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, density: parseFloat(e.target.value) || 0 }))}
+                      placeholder="Auto-calculated from composition"
+                      className={asteroidParameters.density ? 'prefilled' : 'empty'}
+                    />
+                    <span className="parameter-status">
+                      {asteroidParameters.density ? '🔧 Based on composition' : '⚪ Will auto-calculate'}
+                    </span>
+                  </div>
+
+                  <div className="parameter-card">
+                    <label>Mass (kg)</label>
+                    <input
+                      type="number"
+                      step="1000000"
+                      min="0"
+                      value={asteroidParameters.mass || ''}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, mass: parseFloat(e.target.value) || 0 }))}
+                      placeholder="Auto-calculated from diameter & density"
+                      className={asteroidParameters.mass ? 'prefilled' : 'empty'}
+                    />
+                    <span className="parameter-status">
+                      {asteroidParameters.mass ? '🔧 Calculated' : '⚪ Will auto-calculate'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="optional-parameters">
+                <h4>Optional Physical Properties</h4>
+                <div className="parameter-grid">
+                  <div className="parameter-card">
+                    <label>Absolute Magnitude (H)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={asteroidParameters.absolute_magnitude || ''}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, absolute_magnitude: parseFloat(e.target.value) || undefined }))}
+                      placeholder="Optional - improves accuracy"
+                      className={asteroidParameters.absolute_magnitude ? 'prefilled' : 'empty'}
+                    />
+                    <span className="parameter-status">
+                      {asteroidParameters.absolute_magnitude ? '✓ From NASA SBDB' : '⚪ Optional parameter'}
+                    </span>
+                  </div>
+
+                  <div className="parameter-card">
+                    <label>Geometric Albedo</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="1"
+                      value={asteroidParameters.geometric_albedo || ''}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, geometric_albedo: parseFloat(e.target.value) || undefined }))}
+                      placeholder="0.0 - 1.0 (reflectivity)"
+                      className={asteroidParameters.geometric_albedo ? 'prefilled' : 'empty'}
+                    />
+                    <span className="parameter-status">
+                      {asteroidParameters.geometric_albedo ? '✓ From NASA SBDB' : '⚪ Optional parameter'}
+                    </span>
+                  </div>
+
+                  <div className="parameter-card">
+                    <label>Rotation Period (hours)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={asteroidParameters.rotation_period || ''}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, rotation_period: parseFloat(e.target.value) || undefined }))}
+                      placeholder="Spin rate in hours"
+                      className={asteroidParameters.rotation_period ? 'prefilled' : 'empty'}
+                    />
+                    <span className="parameter-status">
+                      {asteroidParameters.rotation_period ? '✓ From NASA SBDB' : '⚪ Optional parameter'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="orbital-elements">
+                <h4>Key Orbital Elements</h4>
+                <div className="parameter-grid">
+                  <div className="parameter-card">
+                    <label>Eccentricity</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      max="0.99"
+                      value={asteroidParameters.eccentricity || ''}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, eccentricity: parseFloat(e.target.value) || undefined }))}
+                      placeholder="0.0 (circular) to 0.99"
+                      className={asteroidParameters.eccentricity !== undefined ? 'prefilled' : 'empty'}
+                    />
+                    <span className="parameter-status">
+                      {asteroidParameters.eccentricity !== undefined ? '✓ From NASA SBDB' : '⚪ Used for velocity calculation'}
+                    </span>
+                  </div>
+
+                  <div className="parameter-card">
+                    <label>Semi-major Axis (AU)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.1"
+                      max="50"
+                      value={asteroidParameters.semi_major_axis || ''}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, semi_major_axis: parseFloat(e.target.value) || undefined }))}
+                      placeholder="Distance from Sun (AU)"
+                      className={asteroidParameters.semi_major_axis ? 'prefilled' : 'empty'}
+                    />
+                    <span className="parameter-status">
+                      {asteroidParameters.semi_major_axis ? '✓ From NASA SBDB' : '⚪ Used for velocity calculation'}
+                    </span>
+                  </div>
+
+                  <div className="parameter-card">
+                    <label>Inclination (degrees)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="180"
+                      value={asteroidParameters.inclination || ''}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, inclination: parseFloat(e.target.value) || undefined }))}
+                      placeholder="Orbital tilt (degrees)"
+                      className={asteroidParameters.inclination !== undefined ? 'prefilled' : 'empty'}
+                    />
+                    <span className="parameter-status">
+                      {asteroidParameters.inclination !== undefined ? '✓ From NASA SBDB' : '⚪ Used for angle estimation'}
+                    </span>
+                  </div>
+
+                  <div className="parameter-card">
+                    <label>MOID (AU)</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={asteroidParameters.moid || ''}
+                      onChange={(e) => setAsteroidParameters(prev => ({ ...prev, moid: parseFloat(e.target.value) || undefined }))}
+                      placeholder="Min distance to Earth orbit"
+                      className={asteroidParameters.moid ? 'prefilled' : 'empty'}
+                    />
+                    <span className="parameter-status">
+                      {asteroidParameters.moid ? '✓ From NASA SBDB' : '⚪ Threat assessment parameter'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}          {/* Impact Parameters */}
           <div className="form-section">
             <h3 className="section-title">Impact Parameters</h3>
             
@@ -313,28 +820,45 @@ const ScenarioSetup = () => {
             </div>
           </div>
 
-          {/* Mitigation Strategy */}
+          {/* Simulation Summary */}
           <div className="form-section">
-            <h3 className="section-title">Mitigation Strategy</h3>
-            
-            <div className="strategy-grid">
-              {mitigationStrategies.map((strategy) => (
-                <div
-                  key={strategy.value}
-                  className={`strategy-card ${scenarioData.mitigation_strategy === strategy.value ? 'selected' : ''}`}
-                  onClick={() => handleInputChange('mitigation_strategy', strategy.value)}
-                >
-                  <div className="strategy-icon">{strategy.icon}</div>
-                  <h4>{strategy.name}</h4>
-                  <p>{strategy.description}</p>
+            <h3 className="section-title">Simulation Summary</h3>
+            <div className="simulation-summary">
+              <div className="summary-grid">
+                <div className="summary-card">
+                  <h4>Asteroid Information</h4>
+                  <p><strong>Name:</strong> {selectedAsteroid?.object?.fullname || selectedAsteroid?.data?.object?.fullname || 'No asteroid selected'}</p>
+                  <p><strong>Diameter:</strong> {asteroidParameters.diameter ? `${asteroidParameters.diameter.toLocaleString()} m` : 'Not specified'}</p>
+                  <p><strong>Parameters Available:</strong> {Object.keys(asteroidParameters).length} from NASA SBDB</p>
                 </div>
-              ))}
+                
+                <div className="summary-card">
+                  <h4>Impact Location</h4>
+                  <p><strong>Latitude:</strong> {scenarioData.impact_location.latitude || 'Not set'}</p>
+                  <p><strong>Longitude:</strong> {scenarioData.impact_location.longitude || 'Not set'}</p>
+                  <p><strong>Status:</strong> {scenarioData.impact_location.latitude && scenarioData.impact_location.longitude ? '✓ Ready' : '⚠️ Incomplete'}</p>
+                </div>
+                
+                <div className="summary-card">
+                  <h4>Impact Parameters</h4>
+                  <p><strong>Velocity:</strong> {scenarioData.velocity_kms} km/s</p>
+                  <p><strong>Angle:</strong> {scenarioData.angle_degrees}°</p>
+                  <p><strong>Mitigation:</strong> {mitigationStrategies.find(s => s.value === scenarioData.mitigation_strategy)?.name || 'None'}</p>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="start-simulation-btn">
-              Start Simulation →
+            <button 
+              type="submit" 
+              className="start-simulation-btn"
+              disabled={!scenarioData.impact_location.latitude || !scenarioData.impact_location.longitude}
+            >
+              {!scenarioData.impact_location.latitude || !scenarioData.impact_location.longitude 
+                ? 'Set Impact Location First' 
+                : 'Start Simulation →'
+              }
             </button>
           </div>
         </form>

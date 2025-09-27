@@ -6,6 +6,7 @@ import ScenarioSetup from './components/ScenarioSetup'
 import PredefinedAsteroid from './components/PredefinedAsteroid'
 import CustomAsteroid from './components/CustomAsteroid'
 import GlobeScreen from './components/GlobeScreen'
+import DebugDataFlow from './components/DebugDataFlow'
 import './App.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/simulation/predefined" element={<PredefinedAsteroid />} />
           <Route path="/simulation/custom" element={<CustomAsteroid />} />
           <Route path="/simulation/globe" element={<GlobeScreen />} />
+          <Route path="/debug" element={<DebugDataFlow />} />
         </Routes>
       </Router>
     </div>

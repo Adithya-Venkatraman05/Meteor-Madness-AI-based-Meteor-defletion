@@ -69,7 +69,7 @@ const GlobeScreen = () => {
       const earthRadius = 6371;
       
       // Angular distance in radians
-      const angularDistance = radiusKm / earthRadius;
+      let angularDistance = radiusKm / earthRadius;
       
       // Prevent circles that are too large
       if (angularDistance > Math.PI) {
