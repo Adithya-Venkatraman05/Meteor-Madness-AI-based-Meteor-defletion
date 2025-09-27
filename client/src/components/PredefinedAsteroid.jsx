@@ -31,7 +31,7 @@ const PredefinedAsteroid = () => {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:8000/asteroids/autocomplete?query=${encodeURIComponent(query)}&limit=10`
+        `http://localhost:8001/asteroids/autocomplete?query=${encodeURIComponent(query)}&limit=10`
       );
       
       if (response.ok) {
@@ -80,7 +80,7 @@ const PredefinedAsteroid = () => {
     setLoadingDetails(true);
     try {
       const response = await fetch(
-        `http://localhost:8000/asteroids/details?name=${encodeURIComponent(asteroidName)}`
+        `http://localhost:8001/asteroids/details?name=${encodeURIComponent(asteroidName)}`
       );
       
       if (response.ok) {
