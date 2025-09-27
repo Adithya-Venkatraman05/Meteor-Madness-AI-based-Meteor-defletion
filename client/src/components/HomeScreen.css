@@ -277,7 +277,7 @@ html {
 .about-text p {
   font-size: 1.2rem;
   line-height: 1.8;
-  color: var(--text-primary);
+  color: whitesmoke;
   margin-bottom: 1.5rem;
   max-width: 700px;
   margin-left: auto;

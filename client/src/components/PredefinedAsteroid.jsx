@@ -375,7 +375,7 @@ const PredefinedAsteroid = () => {
 
         {asteroidDetails && (
           <div className="asteroid-details" style={{
-            backgroundColor: '#f8f9fa',
+            backgroundColor: '#000102ff',
             border: '1px solid #e9ecef',
             borderRadius: '12px',
             padding: '24px',
@@ -387,13 +387,13 @@ const PredefinedAsteroid = () => {
               paddingBottom: '16px',
               marginBottom: '24px'
             }}>
-              <h2 style={{ margin: '0 0 8px 0', color: '#2c3e50' }}>
+              <h2 style={{ margin: '0 0 8px 0', color: '#b4b4b4ff' }}>
                 {asteroidDetails.object?.fullname || asteroidDetails.object?.shortname || 'Unknown Asteroid'}
               </h2>
               <div className="asteroid-badges" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {asteroidDetails.object?.neo && (
                   <span style={{
-                    backgroundColor: '#17a2b8',
+                    backgroundColor: '#b4b4b4ff',
                     color: 'white',
                     padding: '4px 8px',
                     borderRadius: '12px',
@@ -413,7 +413,7 @@ const PredefinedAsteroid = () => {
                 )}
                 {asteroidDetails.object?.orbit_class && (
                   <span style={{
-                    backgroundColor: '#6c757d',
+                    backgroundColor: '#afafafff',
                     color: 'white',
                     padding: '4px 8px',
                     borderRadius: '12px',
