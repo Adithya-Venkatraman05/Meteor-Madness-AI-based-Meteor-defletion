@@ -85,7 +85,8 @@
 }
 
 .coordinate-input-section h3,
-.quick-locations-section h3 {
+.quick-locations-section h3,
+.impact-radius-section h3 {
   color: #4ecdc4;
   margin-bottom: 1rem;
   font-size: 1.2rem;
@@ -156,6 +157,103 @@
 
 .quick-locations-section {
   margin-bottom: 2rem;
+}
+
+.impact-radius-section {
+  margin-bottom: 2rem;
+}
+
+.radius-control {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.radius-value {
+  color: #4ecdc4;
+  font-weight: bold;
+}
+
+.radius-slider {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  width: 100%;
+}
+
+.radius-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4ecdc4;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.radius-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4ecdc4;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.radius-range {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.5rem;
+}
+
+.radius-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.radius-number-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: white;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  width: 100px;
+}
+
+.radius-number-input:focus {
+  outline: none;
+  border-color: #4ecdc4;
+  box-shadow: 0 0 0 2px rgba(78, 205, 196, 0.2);
+}
+
+.radius-unit {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+}
+
+.impact-info {
+  background: rgba(78, 205, 196, 0.1);
+  border: 1px solid rgba(78, 205, 196, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.impact-info p {
+  margin: 0.25rem 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
 }
 
 .location-category {
