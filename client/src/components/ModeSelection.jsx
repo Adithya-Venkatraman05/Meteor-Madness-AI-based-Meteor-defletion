@@ -24,7 +24,7 @@ const ModeSelection = () => {
         
         <div className="mode-buttons">
           <button className="mode-btn predefined-btn" onClick={handlePredefinedMode}>
-            <div className="mode-icon">🌍</div>
+            <div className="mode-icon"></div>
             <h3>Explore Real Asteroids</h3>
             <p>Use NASA data to simulate real asteroid scenarios and deflection strategies</p>
             <div className="mode-features">
@@ -35,7 +35,7 @@ const ModeSelection = () => {
           </button>
 
           <button className="mode-btn custom-btn" onClick={handleCustomMode}>
-            <div className="mode-icon">⚙️</div>
+            <div className="mode-icon"></div>
             <h3>Create Custom Scenario</h3>
             <p>Design your own asteroid with custom properties and orbital parameters</p>
             <div className="mode-features">
