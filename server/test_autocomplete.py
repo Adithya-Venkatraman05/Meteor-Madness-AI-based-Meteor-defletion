@@ -8,7 +8,7 @@ import json
 import time
 
 def test_autocomplete_endpoints():
-    base_url = "http://localhost:8000"
+    base_url = "http://localhost:8001"
     
     # Test cases
     test_queries = [

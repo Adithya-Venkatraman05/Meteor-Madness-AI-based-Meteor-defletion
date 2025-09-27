@@ -1,0 +1,74 @@
+[
+  {
+    "name": "99942 Apophis",
+    "input_data": {
+      "diameter": 270,
+      "mass": 27000000000.0,
+      "velocity": 12900,
+      "composition": "ROCKY"
+    },
+    "impact_analysis": {
+      "energy_mt": 536.9347514340344,
+      "impact_type": "airburst",
+      "thermal_radius_km": 96.39693112070985
+    },
+    "deflection_analysis": {
+      "feasible": true,
+      "success_probability": 1.0
+    }
+  },
+  {
+    "name": "101955 Bennu",
+    "input_data": {
+      "diameter": 492,
+      "mass": 73290000000.0,
+      "velocity": 6200,
+      "composition": "CARBONACEOUS"
+    },
+    "impact_analysis": {
+      "energy_mt": 336.6715583173996,
+      "impact_type": "airburst",
+      "thermal_radius_km": 79.97922184347722
+    },
+    "deflection_analysis": {
+      "feasible": true,
+      "success_probability": 1.0
+    }
+  },
+  {
+    "name": "433 Eros",
+    "input_data": {
+      "diameter": 16840,
+      "mass": 6687000000000000.0,
+      "velocity": 7600,
+      "composition": "ROCKY"
+    },
+    "impact_analysis": {
+      "energy_mt": 46156921.606118545,
+      "impact_type": "airburst",
+      "thermal_radius_km": 9073.802813151053
+    },
+    "deflection_analysis": {
+      "feasible": true,
+      "success_probability": 1.0
+    }
+  },
+  {
+    "name": "25143 Itokawa",
+    "input_data": {
+      "diameter": 535,
+      "mass": 35100000000.0,
+      "velocity": 8000,
+      "composition": "ROCKY"
+    },
+    "impact_analysis": {
+      "energy_mt": 268.4512428298279,
+      "impact_type": "airburst",
+      "thermal_radius_km": 73.05345666916173
+    },
+    "deflection_analysis": {
+      "feasible": true,
+      "success_probability": 1.0
+    }
+  }
+]

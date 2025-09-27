@@ -4,8 +4,8 @@
 
 echo "Starting Meteor Madness FastAPI Server..."
 echo "Virtual environment: .venv"
-echo "Server will be available at: http://localhost:8000"
-echo "API documentation will be available at: http://localhost:8000/docs"
+echo "Server will be available at: http://localhost:8001"
+echo "API documentation will be available at: http://localhost:8001/docs"
 echo ""
 
 # Change to server directory
