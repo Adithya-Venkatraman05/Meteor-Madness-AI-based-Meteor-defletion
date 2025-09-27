@@ -323,45 +323,76 @@ async def asteroid_details(
             detail=f"Internal server error: {str(e)}"
         )
 
-# Physics Engine Impact Analysis API
+# Enhanced Physics Engine Impact Analysis API with NASA SBDB Integration
 @app.get("/physics/impact-analysis")
 async def analyze_asteroid_impact(
+    # Basic physical parameters
     diameter: float = Query(..., gt=0, description="Asteroid diameter in meters"),
     mass: Optional[float] = Query(None, gt=0, description="Asteroid mass in kg (optional, calculated from density if not provided)"),
     density: Optional[float] = Query(None, gt=0, description="Asteroid density in kg/m³ (optional, uses composition default if not provided)"),
     composition: str = Query("ROCKY", description="Asteroid composition: ROCKY, METALLIC, ICY, or CARBONACEOUS"),
-    velocity: float = Query(20000, gt=0, description="Impact velocity in m/s (default: 20000)"),
-    angle: float = Query(45, ge=0, le=90, description="Impact angle in degrees (default: 45)"),
+    
+    # NASA SBDB Physical Parameters
+    absolute_magnitude: Optional[float] = Query(None, description="Absolute magnitude (H) from NASA SBDB"),
+    geometric_albedo: Optional[float] = Query(None, ge=0, le=1, description="Geometric albedo from NASA SBDB"),
+    rotation_period: Optional[float] = Query(None, gt=0, description="Rotation period in hours from NASA SBDB"),
+    color_b_v: Optional[float] = Query(None, description="B-V color index from NASA SBDB"),
+    color_u_b: Optional[float] = Query(None, description="U-B color index from NASA SBDB"),
+    
+    # Orbital Elements from NASA SBDB
+    eccentricity: Optional[float] = Query(None, ge=0, lt=1, description="Orbital eccentricity"),
+    semi_major_axis: Optional[float] = Query(None, gt=0, description="Semi-major axis in AU"),
+    perihelion_distance: Optional[float] = Query(None, gt=0, description="Perihelion distance in AU"),
+    aphelion_distance: Optional[float] = Query(None, gt=0, description="Aphelion distance in AU"),
+    inclination: Optional[float] = Query(None, ge=0, le=180, description="Orbital inclination in degrees"),
+    longitude_ascending_node: Optional[float] = Query(None, ge=0, lt=360, description="Longitude of ascending node in degrees"),
+    argument_perihelion: Optional[float] = Query(None, ge=0, lt=360, description="Argument of perihelion in degrees"),
+    mean_anomaly: Optional[float] = Query(None, ge=0, lt=360, description="Mean anomaly in degrees"),
+    orbital_period: Optional[float] = Query(None, gt=0, description="Orbital period in days"),
+    mean_motion: Optional[float] = Query(None, gt=0, description="Mean motion in deg/day"),
+    moid: Optional[float] = Query(None, ge=0, description="Minimum Orbit Intersection Distance in AU"),
+    
+    # Impact analysis parameters
+    velocity: Optional[float] = Query(None, gt=0, description="Impact velocity in m/s (calculated from orbital mechanics if not provided)"),
+    angle: Optional[float] = Query(None, ge=0, le=90, description="Impact angle in degrees (calculated from orbital geometry if not provided)"),
     population_density: float = Query(100, ge=0, description="Population density in people/km² (default: 100)"),
+    
+    # Deflection analysis parameters
     deflection_distance: Optional[float] = Query(None, gt=0, description="Required deflection distance in meters (optional, for deflection analysis)"),
     warning_time: Optional[float] = Query(None, gt=0, description="Available warning time in seconds (optional, for deflection analysis)"),
     available_energy: Optional[float] = Query(None, gt=0, description="Available deflection energy in Joules (optional, for deflection analysis)")
 ):
     """
-    Analyze asteroid impact physics and calculate damage radii with gradient ordering
+    Enhanced asteroid impact analysis using NASA SBDB data and orbital mechanics
     
-    Required Query Parameters:
-    - diameter: Asteroid diameter in meters (must be > 0)
+    Required Parameters:
+    - diameter: Asteroid diameter in meters
     
-    Optional Query Parameters:
-    - mass: Asteroid mass in kg (calculated from density/composition if not provided)
-    - density: Asteroid density in kg/m³ (uses composition default if not provided)
-    - composition: ROCKY (default), METALLIC, ICY, or CARBONACEOUS
-    - velocity: Impact velocity in m/s (default: 20000)
-    - angle: Impact angle in degrees 0-90 (default: 45)
-    - population_density: People per km² (default: 100)
-    - deflection_distance: Required deflection distance in meters (for deflection analysis)
-    - warning_time: Available warning time in seconds (for deflection analysis)
-    - available_energy: Available deflection energy in Joules (for deflection analysis)
+    NASA SBDB Physical Parameters (Optional):
+    - absolute_magnitude, geometric_albedo, rotation_period, color indices
+    
+    Orbital Elements (Optional):
+    - eccentricity, semi_major_axis, inclination, MOID, etc.
+    
+    Impact Analysis Parameters:
+    - velocity, angle (calculated from orbital mechanics if not provided)
+    - population_density, deflection parameters
     
     Returns:
-    - Complete impact analysis with radii in gradient order (most severe to least severe)
-    - Energy calculations and TNT equivalents
-    - Casualty estimates
-    - Deflection feasibility (if deflection parameters provided)
+    - Complete enhanced impact analysis with:
+      * Impact coordinates (latitude/longitude)
+      * Airburst altitude determination
+      * Crater diameter predictions  
+      * Seismic magnitude estimation
+      * Thermal and overpressure damage zones
+      * Deflection planning analysis
+      * Orbital classification and approach geometry
     """
     try:
-        logger.info(f"Analyzing asteroid impact: diameter={diameter}m, composition={composition}")
+        logger.info(f"Enhanced asteroid impact analysis: diameter={diameter}m, composition={composition}")
+        
+        # Import the enhanced classes
+        from physics_engine import OrbitalElements, ImpactCoordinates
         
         # Validate composition
         try:
@@ -373,23 +404,56 @@ async def analyze_asteroid_impact(
                 detail=f"Invalid composition '{composition}'. Valid options: {valid_compositions}"
             )
         
-        # Create asteroid properties
+        # Create orbital elements if provided
+        orbital_elements = None
+        if any([eccentricity, semi_major_axis, inclination, moid]):
+            orbital_elements = OrbitalElements(
+                eccentricity=eccentricity or 0.0,
+                semi_major_axis=semi_major_axis or 1.0,
+                perihelion_distance=perihelion_distance or (semi_major_axis or 1.0) * (1 - (eccentricity or 0.0)),
+                aphelion_distance=aphelion_distance or (semi_major_axis or 1.0) * (1 + (eccentricity or 0.0)),
+                inclination=inclination or 0.0,
+                longitude_ascending_node=longitude_ascending_node or 0.0,
+                argument_perihelion=argument_perihelion or 0.0,
+                mean_anomaly=mean_anomaly or 0.0,
+                orbital_period=orbital_period or 365.25,
+                mean_motion=mean_motion or 1.0,
+                moid=moid or 1.0,
+                absolute_magnitude=absolute_magnitude or 20.0
+            )
+            logger.info(f"Created orbital elements: e={eccentricity}, a={semi_major_axis} AU, i={inclination}°")
+        
+        # Create enhanced asteroid properties with NASA SBDB data
         asteroid = AsteroidProperties(
             diameter=diameter,
             mass=mass,
             density=density,
             composition=composition_enum,
-            velocity=velocity,
-            angle=angle
+            velocity=velocity,  # Will be calculated from orbital mechanics if None
+            angle=angle,        # Will be calculated from orbital geometry if None
+            
+            # NASA SBDB Physical Parameters
+            absolute_magnitude=absolute_magnitude,
+            geometric_albedo=geometric_albedo,
+            rotation_period=rotation_period,
+            color_b_v=color_b_v,
+            color_u_b=color_u_b,
+            
+            # Orbital Elements
+            orbital_elements=orbital_elements
         )
         
-        # Perform impact analysis
+        logger.info(f"Created enhanced asteroid with orbital data: {orbital_elements is not None}")
+        
+        # Perform enhanced impact analysis with orbital mechanics
         results = physics_engine.analyze_impact(asteroid, population_density)
         
-        # Create gradient-ordered radii (most severe to least severe impact)
+        logger.info(f"Enhanced analysis complete: orbital_class={results.orbital_classification}, coords={results.impact_coordinates is not None}")
+        
+        # Create comprehensive impact radii analysis
         impact_radii = []
         
-        # Add thermal effects radius
+        # Add thermal effects radius (most severe)
         if results.thermal_radius > 0:
             impact_radii.append({
                 "type": "thermal_burns",
@@ -397,80 +461,234 @@ async def analyze_asteroid_impact(
                 "radius_meters": results.thermal_radius,
                 "radius_km": results.thermal_radius / 1000,
                 "severity_level": 1,
-                "color_code": "#FF0000"  # Red for most severe
+                "color_code": "#FF0000",  # Red for most severe
+                "effect_type": "thermal"
             })
         
         # Add overpressure radii in order of severity
-        overpressure_order = [
-            ("total_destruction", "Total destruction", 1, "#800000"),  # Dark red
-            ("severe_damage", "Severe structural damage", 2, "#FF4500"),  # Orange red
-            ("moderate_damage", "Moderate damage", 3, "#FFA500"),  # Orange
-            ("light_damage", "Light damage", 4, "#FFFF00")  # Yellow
+        overpressure_levels = [
+            ("total_destruction", "Total destruction - Complete building collapse", 1, "#800000"),
+            ("severe_damage", "Severe structural damage - Heavy building damage", 2, "#FF4500"),
+            ("moderate_damage", "Moderate damage - Roof and wall damage", 3, "#FFA500"),
+            ("light_damage", "Light damage - Window breakage", 4, "#FFFF00")
         ]
         
-        for level, description, severity, color in overpressure_order:
+        for level, description, base_severity, color in overpressure_levels:
             if level in results.overpressure_radius and results.overpressure_radius[level] > 0:
+                # Adjust severity based on thermal effects
+                severity = base_severity + (1 if results.thermal_radius > 0 else 0)
                 impact_radii.append({
                     "type": f"overpressure_{level}",
                     "description": description,
                     "radius_meters": results.overpressure_radius[level],
                     "radius_km": results.overpressure_radius[level] / 1000,
                     "severity_level": severity,
-                    "color_code": color
+                    "color_code": color,
+                    "effect_type": "overpressure"
                 })
         
         # Sort by radius (largest first for gradient effect)
         impact_radii.sort(key=lambda x: x["radius_meters"], reverse=True)
         
-        # Prepare basic impact analysis response
+        # Calculate comprehensive damage zones summary
+        damage_zones = {
+            "total_zones": len(impact_radii),
+            "max_radius_km": max([r["radius_km"] for r in impact_radii], default=0),
+            "total_affected_area_km2": max([r["radius_km"]**2 * 3.14159 for r in impact_radii], default=0),
+            "thermal_zone_present": results.thermal_radius > 0,
+            "overpressure_zones": len([r for r in impact_radii if r["effect_type"] == "overpressure"])
+        }
+        
+        # Prepare comprehensive enhanced impact analysis response
         response = {
             "success": True,
+            "analysis_type": "enhanced_orbital_mechanics",
+            
+            # Enhanced asteroid parameters with NASA SBDB data
             "asteroid_parameters": {
-                "diameter_m": asteroid.diameter,
-                "mass_kg": asteroid.mass,
-                "density_kg_m3": asteroid.density,
-                "composition": composition.upper(),
-                "velocity_ms": asteroid.velocity,
-                "angle_degrees": asteroid.angle
+                "basic_properties": {
+                    "diameter_m": asteroid.diameter,
+                    "mass_kg": asteroid.mass,
+                    "density_kg_m3": asteroid.density,
+                    "composition": composition.upper()
+                },
+                "nasa_sbdb_data": {
+                    "absolute_magnitude": asteroid.absolute_magnitude,
+                    "geometric_albedo": asteroid.geometric_albedo,
+                    "rotation_period_hours": asteroid.rotation_period,
+                    "color_b_v": asteroid.color_b_v,
+                    "color_u_b": asteroid.color_u_b
+                },
+                "calculated_properties": {
+                    "approach_velocity_ms": results.approach_velocity,
+                    "impact_angle_degrees": results.impact_angle_calculated,
+                    "velocity_calculated_from_orbit": asteroid.calculated_velocity,
+                    "angle_calculated_from_orbit": asteroid.calculated_angle
+                }
             },
-            "energy_analysis": {
-                "kinetic_energy_joules": results.kinetic_energy,
-                "tnt_equivalent_megatons": results.tnt_equivalent,
-                "impact_type": results.impact_type.value,
-                "airburst_altitude_km": results.airburst_altitude / 1000 if results.airburst_altitude else None,
-                "crater_diameter_m": results.crater_diameter if results.crater_diameter > 0 else None,
-                "seismic_magnitude": results.seismic_magnitude
+            
+            # Orbital mechanics analysis
+            "orbital_analysis": {
+                "orbital_classification": results.orbital_classification,
+                "orbital_elements": {
+                    "eccentricity": eccentricity,
+                    "semi_major_axis_au": semi_major_axis,
+                    "inclination_degrees": inclination,
+                    "moid_au": moid,
+                    "perihelion_distance_au": perihelion_distance,
+                    "aphelion_distance_au": aphelion_distance
+                } if orbital_elements else None,
+                "earth_threat_assessment": {
+                    "potentially_hazardous": moid < 0.05 if moid else False,
+                    "earth_crossing": results.orbital_classification in ["Apollo", "Aten"] if results.orbital_classification else False,
+                    "close_approach_risk": "High" if (moid and moid < 0.01) else "Moderate" if (moid and moid < 0.05) else "Low"
+                }
             },
-            "impact_radii_gradient": impact_radii,
-            "casualty_estimates": results.casualty_estimate,
-            "analysis_metadata": {
-                "population_density_per_km2": population_density,
-                "total_affected_area_km2": max([r["radius_km"]**2 * 3.14159 for r in impact_radii], default=0),
-                "max_impact_radius_km": max([r["radius_km"] for r in impact_radii], default=0)
+            
+            # Impact coordinates and location analysis
+            "impact_location": {
+                "coordinates": {
+                    "latitude": results.impact_coordinates.latitude,
+                    "longitude": results.impact_coordinates.longitude,
+                    "region_type": results.impact_coordinates.impact_region,
+                    "nearest_city": results.impact_coordinates.nearest_city,
+                    "distance_to_city_km": results.impact_coordinates.distance_to_city,
+                    "local_impact_time": results.impact_coordinates.local_time
+                } if results.impact_coordinates else None,
+                "geographic_analysis": {
+                    "ocean_impact": results.impact_coordinates.impact_region == "Ocean" if results.impact_coordinates else False,
+                    "populated_area": results.impact_coordinates.impact_region == "Populated" if results.impact_coordinates else False,
+                    "remote_area": results.impact_coordinates.impact_region == "Remote" if results.impact_coordinates else False
+                }
+            },
+            
+            # Comprehensive energy and impact analysis
+            "impact_analysis": {
+                "energy_calculations": {
+                    "kinetic_energy_joules": results.kinetic_energy,
+                    "tnt_equivalent_megatons": results.tnt_equivalent,
+                    "energy_per_kg_population": results.kinetic_energy / (population_density * 1000) if population_density > 0 else 0
+                },
+                "impact_mechanics": {
+                    "impact_type": results.impact_type.value,
+                    "airburst_altitude_km": results.airburst_altitude / 1000 if results.airburst_altitude else None,
+                    "crater_diameter_m": results.crater_diameter if results.crater_diameter > 0 else None,
+                    "seismic_magnitude": results.seismic_magnitude,
+                    "surface_impact": results.impact_type.value == "surface"
+                }
+            },
+            
+            # Enhanced damage zones with comprehensive analysis
+            "damage_analysis": {
+                "impact_radii_by_severity": impact_radii,
+                "damage_zones_summary": damage_zones,
+                "thermal_effects": {
+                    "thermal_radius_km": results.thermal_radius / 1000 if results.thermal_radius > 0 else 0,
+                    "thermal_area_km2": (results.thermal_radius / 1000)**2 * 3.14159 if results.thermal_radius > 0 else 0,
+                    "burn_casualties_estimated": results.casualty_estimate.get("severe_injuries", 0) if results.thermal_radius > 0 else 0
+                },
+                "overpressure_effects": {
+                    "total_destruction_radius_km": results.overpressure_radius.get("total_destruction", 0) / 1000,
+                    "severe_damage_radius_km": results.overpressure_radius.get("severe_damage", 0) / 1000,
+                    "moderate_damage_radius_km": results.overpressure_radius.get("moderate_damage", 0) / 1000,
+                    "light_damage_radius_km": results.overpressure_radius.get("light_damage", 0) / 1000
+                }
+            },
+            
+            # Casualty and population impact estimates
+            "casualty_analysis": {
+                "estimated_casualties": results.casualty_estimate,
+                "population_analysis": {
+                    "population_density_per_km2": population_density,
+                    "total_population_at_risk": int(damage_zones["total_affected_area_km2"] * population_density),
+                    "fatality_rate_percent": (results.casualty_estimate.get("fatalities", 0) / 
+                                            max(1, damage_zones["total_affected_area_km2"] * population_density)) * 100
+                }
             }
         }
         
-        # Add deflection analysis if parameters provided
+        # Add comprehensive deflection planning analysis if parameters provided
         if all(param is not None for param in [deflection_distance, warning_time, available_energy]):
             # Type checking ensures these are not None at this point
             deflection_analysis = physics_engine.assess_deflection_feasibility(
                 asteroid, deflection_distance, warning_time, available_energy  # type: ignore
             )
             
-            response["deflection_analysis"] = {
-                "feasible": deflection_analysis["feasible"],
-                "required_energy_joules": deflection_analysis["required_energy"],
-                "available_energy_joules": deflection_analysis["available_energy"],
-                "energy_ratio": deflection_analysis["energy_ratio"],
-                "success_probability": deflection_analysis["success_probability"],
-                "deflection_parameters": {
-                    "required_deflection_distance_m": deflection_distance,
+            # Calculate additional deflection metrics
+            warning_time_years = warning_time / (365.25 * 24 * 3600)  # type: ignore
+            energy_shortfall = max(0, deflection_analysis["required_energy"] - deflection_analysis["available_energy"])
+            
+            response["deflection_planning"] = {
+                "feasibility_assessment": {
+                    "mission_feasible": deflection_analysis["feasible"],
+                    "success_probability_percent": deflection_analysis["success_probability"] * 100,
+                    "energy_adequacy": "Sufficient" if deflection_analysis["feasible"] else "Insufficient",
+                    "mission_difficulty": "Low" if deflection_analysis["energy_ratio"] > 2 else "Moderate" if deflection_analysis["energy_ratio"] > 1 else "High"
+                },
+                "energy_requirements": {
+                    "required_energy_joules": deflection_analysis["required_energy"],
+                    "available_energy_joules": deflection_analysis["available_energy"],
+                    "energy_ratio": deflection_analysis["energy_ratio"],
+                    "energy_shortfall_joules": energy_shortfall,
+                    "energy_shortfall_percent": (energy_shortfall / deflection_analysis["required_energy"]) * 100 if deflection_analysis["required_energy"] > 0 else 0
+                },
+                "mission_parameters": {
+                    "deflection_distance_m": deflection_distance,
+                    "deflection_distance_km": deflection_distance / 1000,  # type: ignore
                     "warning_time_seconds": warning_time,
-                    "warning_time_days": warning_time / 86400  # type: ignore
+                    "warning_time_days": warning_time / 86400,  # type: ignore
+                    "warning_time_years": warning_time_years,
+                    "deflection_velocity_ms": deflection_distance / warning_time if warning_time > 0 else 0  # type: ignore
+                },
+                "mission_recommendations": {
+                    "recommended_approach": "Kinetic Impactor" if deflection_analysis["energy_ratio"] < 10 else "Nuclear Device" if deflection_analysis["energy_ratio"] < 1 else "Gravity Tractor",
+                    "multiple_missions_needed": deflection_analysis["energy_ratio"] < 0.5,
+                    "early_detection_critical": warning_time_years < 5,
+                    "mission_urgency": "Critical" if warning_time_years < 1 else "High" if warning_time_years < 5 else "Moderate"
                 }
             }
+        else:
+            # Provide basic deflection guidelines even without specific parameters
+            impact_energy_megatons = results.tnt_equivalent
+            estimated_warning_needed_years = max(1, impact_energy_megatons * 0.1)  # Rough estimate
+            
+            response["deflection_planning"] = {
+                "basic_assessment": {
+                    "asteroid_threat_level": "Extinction Level" if impact_energy_megatons > 1000 else "Regional Disaster" if impact_energy_megatons > 10 else "Local Damage",
+                    "estimated_warning_time_needed_years": estimated_warning_needed_years,
+                    "deflection_difficulty": "Extreme" if impact_energy_megatons > 1000 else "High" if impact_energy_megatons > 100 else "Moderate",
+                    "recommended_detection_advance_years": estimated_warning_needed_years * 2
+                },
+                "general_recommendations": {
+                    "priority_level": "Planetary Defense" if impact_energy_megatons > 100 else "Regional Response" if impact_energy_megatons > 1 else "Local Monitoring",
+                    "suggested_missions": ["Early Warning Systems", "Kinetic Impactor", "Gravity Tractor"] if impact_energy_megatons < 100 else ["Multiple Nuclear Devices", "Mass Deflection Systems"],
+                    "international_cooperation_needed": impact_energy_megatons > 10
+                },
+                "note": "Provide deflection_distance, warning_time, and available_energy parameters for detailed mission analysis"
+            }
         
-        logger.info(f"Successfully analyzed asteroid impact: {len(impact_radii)} damage zones identified")
+        # Add analysis summary metadata
+        response["analysis_summary"] = {
+            "analysis_timestamp": f"{logger.name}_{hash(str(asteroid.diameter))}",
+            "features_used": {
+                "orbital_mechanics": orbital_elements is not None,
+                "nasa_sbdb_data": any([absolute_magnitude, geometric_albedo, color_b_v]),
+                "impact_coordinates": results.impact_coordinates is not None,
+                "deflection_analysis": all(param is not None for param in [deflection_distance, warning_time, available_energy]),
+                "enhanced_composition": asteroid.geometric_albedo is not None or asteroid.color_b_v is not None
+            },
+            "damage_zones_identified": len(impact_radii),
+            "max_impact_radius_km": damage_zones["max_radius_km"],
+            "orbital_classification": results.orbital_classification,
+            "threat_assessment": {
+                "earth_crossing": results.orbital_classification in ["Apollo", "Aten"] if results.orbital_classification else False,
+                "high_energy_impact": results.tnt_equivalent > 1.0,
+                "population_threat": results.casualty_estimate.get("fatalities", 0) > 1000,
+                "requires_deflection": results.tnt_equivalent > 0.1
+            }
+        }
+        
+        logger.info(f"Enhanced asteroid analysis complete: {len(impact_radii)} zones, {results.orbital_classification} orbit, {results.tnt_equivalent:.2f} MT")
         return response
         
     except ValueError as e:
@@ -485,6 +703,99 @@ async def analyze_asteroid_impact(
             status_code=500,
             detail=f"Physics analysis error: {str(e)}"
         )
+
+# Convenience endpoint for analyzing asteroid using NASA SBDB data directly
+@app.post("/physics/analyze-from-sbdb")
+async def analyze_from_sbdb_data(sbdb_data: dict):
+    """
+    Analyze asteroid impact using NASA SBDB data structure directly
+    
+    Accepts the full NASA SBDB response and extracts relevant parameters
+    for comprehensive impact analysis with enhanced physics engine.
+    """
+    try:
+        logger.info("Analyzing asteroid from NASA SBDB data structure")
+        
+        # Extract physical parameters from SBDB data
+        obj_data = sbdb_data.get("data", {}).get("object", {})
+        phys_par = sbdb_data.get("data", {}).get("phys_par", [])
+        orbit = sbdb_data.get("data", {}).get("orbit", {})
+        
+        # Extract diameter (convert km to meters)
+        diameter = None
+        for param in phys_par:
+            if param.get("name") == "diameter":
+                diameter = float(param.get("value", 0)) * 1000  # Convert km to m
+                break
+        
+        if not diameter:
+            raise HTTPException(status_code=400, detail="Diameter not found in SBDB data")
+        
+        # Extract other physical parameters
+        albedo = None
+        rotation_period = None
+        absolute_mag = None
+        
+        for param in phys_par:
+            param_name = param.get("name", "").lower()
+            if "albedo" in param_name:
+                albedo = float(param.get("value", 0))
+            elif "rotation" in param_name:
+                rotation_period = float(param.get("value", 0))
+            elif "h" in param_name or "magnitude" in param_name:
+                absolute_mag = float(param.get("value", 20))
+        
+        # Extract orbital elements
+        elements = orbit.get("elements", [])
+        orbital_params = {}
+        
+        element_mapping = {
+            "e": "eccentricity",
+            "a": "semi_major_axis", 
+            "q": "perihelion_distance",
+            "i": "inclination",
+            "om": "longitude_ascending_node",
+            "w": "argument_perihelion",
+            "ma": "mean_anomaly",
+            "per": "orbital_period"
+        }
+        
+        for element in elements:
+            symbol = element.get("name")
+            if symbol in element_mapping:
+                orbital_params[element_mapping[symbol]] = float(element.get("value", 0))
+        
+        # Build query parameters for the main analysis endpoint
+        analysis_params = {
+            "diameter": diameter,
+            "absolute_magnitude": absolute_mag,
+            "geometric_albedo": albedo,
+            "rotation_period": rotation_period,
+            **orbital_params
+        }
+        
+        # Remove None values
+        analysis_params = {k: v for k, v in analysis_params.items() if v is not None}
+        
+        logger.info(f"Extracted parameters from SBDB: diameter={diameter}m, orbital_elements={len(orbital_params)}")
+        
+        # Call the main analysis function with extracted parameters
+        # Note: In a real implementation, you might want to call the analysis function directly
+        return {
+            "success": True,
+            "message": "SBDB data processed successfully",
+            "extracted_parameters": analysis_params,
+            "sbdb_object_name": obj_data.get("fullname", "Unknown"),
+            "analysis_note": "Use the /physics/impact-analysis endpoint with these parameters for full analysis"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error processing SBDB data: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing SBDB data: {str(e)}"
+        )
+
 
 if __name__ == "__main__":
     # Run the server
