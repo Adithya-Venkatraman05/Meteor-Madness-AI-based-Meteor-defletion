@@ -1,0 +1,36 @@
+{
+  "asteroid_properties": {
+    "diameter_m": 150,
+    "mass_kg": 4594579255.8750725,
+    "density_kg_m3": 2600,
+    "composition": "ROCKY",
+    "velocity_m_s": 18000,
+    "impact_angle_deg": 35
+  },
+  "impact_analysis": {
+    "kinetic_energy_J": 7.443218394517618e+17,
+    "tnt_equivalent_MT": 177.89718916151094,
+    "impact_type": "airburst",
+    "airburst_altitude_m": 44440.51230552423,
+    "crater_diameter_m": 0,
+    "seismic_magnitude": 6.10407971053396,
+    "thermal_radius_m": 61967.25197021905,
+    "overpressure_radii_m": {
+      "total_destruction": 4898.699360866476,
+      "severe_damage": 7776.200518715391,
+      "moderate_damage": 10553.927839087753,
+      "light_damage": 13297.115843538175
+    },
+    "casualty_estimates": {
+      "fatalities": 6785,
+      "severe_injuries": 493939,
+      "moderate_injuries": 10497,
+      "light_injuries": 0
+    }
+  },
+  "risk_assessment": {
+    "severity": "HIGH",
+    "population_at_risk": 511221,
+    "economic_damage_estimate": "TBD"
+  }
+}

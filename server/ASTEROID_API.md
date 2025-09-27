@@ -15,7 +15,7 @@ Uses NASA's Small-Body Database API to search for Near-Earth Asteroids.
 
 **Example:**
 ```bash
-curl "http://localhost:8000/asteroids/autocomplete?query=Apophis&limit=5"
+curl "http://localhost:8001/asteroids/autocomplete?query=Apophis&limit=5"
 ```
 
 **Response:**
@@ -49,7 +49,7 @@ Uses a curated list of well-known asteroids for faster, more reliable responses.
 
 **Example:**
 ```bash
-curl "http://localhost:8000/asteroids/autocomplete-simple?query=Ceres&limit=5"
+curl "http://localhost:8001/asteroids/autocomplete-simple?query=Ceres&limit=5"
 ```
 
 **Response:**
@@ -79,7 +79,7 @@ const searchAsteroids = async (query) => {
   
   try {
     const response = await fetch(
-      `http://localhost:8000/asteroids/autocomplete-simple?query=${encodeURIComponent(query)}&limit=10`
+      `http://localhost:8001/asteroids/autocomplete-simple?query=${encodeURIComponent(query)}&limit=10`
     );
     
     if (!response.ok) {

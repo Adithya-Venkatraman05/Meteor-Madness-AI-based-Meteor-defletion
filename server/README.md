@@ -27,16 +27,16 @@ python main.py
 ### Option 3: Using uvicorn directly
 ```bash
 # From the server directory
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 ## API Endpoints
 
 Once the server is running, you can access:
 
-- **Server**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-- **Alternative API Docs**: http://localhost:8000/redoc
+- **Server**: http://localhost:8001
+- **API Documentation**: http://localhost:8001/docs
+- **Alternative API Docs**: http://localhost:8001/redoc
 
 ### Available Endpoints
 

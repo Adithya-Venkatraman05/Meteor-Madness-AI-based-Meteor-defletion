@@ -2,14 +2,18 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import requests
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
 import json
 import re
+from physics_engine import PhysicsEngine, AsteroidProperties, AsteroidComposition
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize physics engine
+physics_engine = PhysicsEngine()
 
 # Create FastAPI instance
 app = FastAPI(
@@ -319,12 +323,175 @@ async def asteroid_details(
             detail=f"Internal server error: {str(e)}"
         )
 
+# Physics Engine Impact Analysis API
+@app.get("/physics/impact-analysis")
+async def analyze_asteroid_impact(
+    diameter: float = Query(..., gt=0, description="Asteroid diameter in meters"),
+    mass: Optional[float] = Query(None, gt=0, description="Asteroid mass in kg (optional, calculated from density if not provided)"),
+    density: Optional[float] = Query(None, gt=0, description="Asteroid density in kg/m³ (optional, uses composition default if not provided)"),
+    composition: str = Query("ROCKY", description="Asteroid composition: ROCKY, METALLIC, ICY, or CARBONACEOUS"),
+    velocity: float = Query(20000, gt=0, description="Impact velocity in m/s (default: 20000)"),
+    angle: float = Query(45, ge=0, le=90, description="Impact angle in degrees (default: 45)"),
+    population_density: float = Query(100, ge=0, description="Population density in people/km² (default: 100)"),
+    deflection_distance: Optional[float] = Query(None, gt=0, description="Required deflection distance in meters (optional, for deflection analysis)"),
+    warning_time: Optional[float] = Query(None, gt=0, description="Available warning time in seconds (optional, for deflection analysis)"),
+    available_energy: Optional[float] = Query(None, gt=0, description="Available deflection energy in Joules (optional, for deflection analysis)")
+):
+    """
+    Analyze asteroid impact physics and calculate damage radii with gradient ordering
+    
+    Required Query Parameters:
+    - diameter: Asteroid diameter in meters (must be > 0)
+    
+    Optional Query Parameters:
+    - mass: Asteroid mass in kg (calculated from density/composition if not provided)
+    - density: Asteroid density in kg/m³ (uses composition default if not provided)
+    - composition: ROCKY (default), METALLIC, ICY, or CARBONACEOUS
+    - velocity: Impact velocity in m/s (default: 20000)
+    - angle: Impact angle in degrees 0-90 (default: 45)
+    - population_density: People per km² (default: 100)
+    - deflection_distance: Required deflection distance in meters (for deflection analysis)
+    - warning_time: Available warning time in seconds (for deflection analysis)
+    - available_energy: Available deflection energy in Joules (for deflection analysis)
+    
+    Returns:
+    - Complete impact analysis with radii in gradient order (most severe to least severe)
+    - Energy calculations and TNT equivalents
+    - Casualty estimates
+    - Deflection feasibility (if deflection parameters provided)
+    """
+    try:
+        logger.info(f"Analyzing asteroid impact: diameter={diameter}m, composition={composition}")
+        
+        # Validate composition
+        try:
+            composition_enum = AsteroidComposition[composition.upper()]
+        except KeyError:
+            valid_compositions = [comp.name for comp in AsteroidComposition]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid composition '{composition}'. Valid options: {valid_compositions}"
+            )
+        
+        # Create asteroid properties
+        asteroid = AsteroidProperties(
+            diameter=diameter,
+            mass=mass,
+            density=density,
+            composition=composition_enum,
+            velocity=velocity,
+            angle=angle
+        )
+        
+        # Perform impact analysis
+        results = physics_engine.analyze_impact(asteroid, population_density)
+        
+        # Create gradient-ordered radii (most severe to least severe impact)
+        impact_radii = []
+        
+        # Add thermal effects radius
+        if results.thermal_radius > 0:
+            impact_radii.append({
+                "type": "thermal_burns",
+                "description": "3rd degree burns from thermal radiation",
+                "radius_meters": results.thermal_radius,
+                "radius_km": results.thermal_radius / 1000,
+                "severity_level": 1,
+                "color_code": "#FF0000"  # Red for most severe
+            })
+        
+        # Add overpressure radii in order of severity
+        overpressure_order = [
+            ("total_destruction", "Total destruction", 1, "#800000"),  # Dark red
+            ("severe_damage", "Severe structural damage", 2, "#FF4500"),  # Orange red
+            ("moderate_damage", "Moderate damage", 3, "#FFA500"),  # Orange
+            ("light_damage", "Light damage", 4, "#FFFF00")  # Yellow
+        ]
+        
+        for level, description, severity, color in overpressure_order:
+            if level in results.overpressure_radius and results.overpressure_radius[level] > 0:
+                impact_radii.append({
+                    "type": f"overpressure_{level}",
+                    "description": description,
+                    "radius_meters": results.overpressure_radius[level],
+                    "radius_km": results.overpressure_radius[level] / 1000,
+                    "severity_level": severity,
+                    "color_code": color
+                })
+        
+        # Sort by radius (largest first for gradient effect)
+        impact_radii.sort(key=lambda x: x["radius_meters"], reverse=True)
+        
+        # Prepare basic impact analysis response
+        response = {
+            "success": True,
+            "asteroid_parameters": {
+                "diameter_m": asteroid.diameter,
+                "mass_kg": asteroid.mass,
+                "density_kg_m3": asteroid.density,
+                "composition": composition.upper(),
+                "velocity_ms": asteroid.velocity,
+                "angle_degrees": asteroid.angle
+            },
+            "energy_analysis": {
+                "kinetic_energy_joules": results.kinetic_energy,
+                "tnt_equivalent_megatons": results.tnt_equivalent,
+                "impact_type": results.impact_type.value,
+                "airburst_altitude_km": results.airburst_altitude / 1000 if results.airburst_altitude else None,
+                "crater_diameter_m": results.crater_diameter if results.crater_diameter > 0 else None,
+                "seismic_magnitude": results.seismic_magnitude
+            },
+            "impact_radii_gradient": impact_radii,
+            "casualty_estimates": results.casualty_estimate,
+            "analysis_metadata": {
+                "population_density_per_km2": population_density,
+                "total_affected_area_km2": max([r["radius_km"]**2 * 3.14159 for r in impact_radii], default=0),
+                "max_impact_radius_km": max([r["radius_km"] for r in impact_radii], default=0)
+            }
+        }
+        
+        # Add deflection analysis if parameters provided
+        if all(param is not None for param in [deflection_distance, warning_time, available_energy]):
+            # Type checking ensures these are not None at this point
+            deflection_analysis = physics_engine.assess_deflection_feasibility(
+                asteroid, deflection_distance, warning_time, available_energy  # type: ignore
+            )
+            
+            response["deflection_analysis"] = {
+                "feasible": deflection_analysis["feasible"],
+                "required_energy_joules": deflection_analysis["required_energy"],
+                "available_energy_joules": deflection_analysis["available_energy"],
+                "energy_ratio": deflection_analysis["energy_ratio"],
+                "success_probability": deflection_analysis["success_probability"],
+                "deflection_parameters": {
+                    "required_deflection_distance_m": deflection_distance,
+                    "warning_time_seconds": warning_time,
+                    "warning_time_days": warning_time / 86400  # type: ignore
+                }
+            }
+        
+        logger.info(f"Successfully analyzed asteroid impact: {len(impact_radii)} damage zones identified")
+        return response
+        
+    except ValueError as e:
+        logger.error(f"Invalid parameter value: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid parameter: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Error in physics analysis: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Physics analysis error: {str(e)}"
+        )
+
 if __name__ == "__main__":
     # Run the server
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=8001,
         reload=True,  # Enable auto-reload for development
         log_level="info"
     )
