@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './ScenarioSetup.css';
 
@@ -52,6 +52,27 @@ const ScenarioSetup = () => {
   const [errors, setErrors] = useState({});
   const [selectedLocation, setSelectedLocation] = useState(null);
 
+  // Check for coordinates from globe screen on component load
+  useEffect(() => {
+    const savedLocation = localStorage.getItem('impactLocation');
+    if (savedLocation) {
+      try {
+        const coordinates = JSON.parse(savedLocation);
+        setScenarioData(prev => ({
+          ...prev,
+          impact_location: {
+            latitude: coordinates.lat,
+            longitude: coordinates.lng
+          }
+        }));
+        // Clear the saved location to prevent reloading on refresh
+        localStorage.removeItem('impactLocation');
+      } catch (error) {
+        console.error('Error parsing saved location:', error);
+      }
+    }
+  }, []);
+
   // Predefined locations for quick selection
   const quickLocations = [
     { name: 'New York, USA', lat: 40.7128, lng: -74.0060 },
@@ -93,21 +114,15 @@ const ScenarioSetup = () => {
   };
 
   const handleLocationSelect = (location) => {
-    setSelectedLocation(location);
-    setScenarioData(prev => ({
-      ...prev,
-      impact_location: {
-        latitude: location.lat,
-        longitude: location.lng
-      }
-    }));
+    // Save the selected location coordinates to localStorage
+    const coordinates = {
+      lat: location.lat,
+      lng: location.lng
+    };
+    localStorage.setItem('currentImpactLocation', JSON.stringify(coordinates));
     
-    // Clear location errors
-    setErrors(prev => ({
-      ...prev,
-      latitude: undefined,
-      longitude: undefined
-    }));
+    // Navigate to globe screen with pre-filled coordinates
+    navigate('/simulation/globe');
   };
 
   const handleInputChange = (field, value) => {
@@ -139,13 +154,13 @@ const ScenarioSetup = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      const completeScenario = {
-        asteroid: { name: 'Sample Asteroid' }, // Mock data for now
-        scenario: scenarioData
+      // Save current coordinates and navigate to globe screen for visual confirmation
+      const coordinates = {
+        lat: scenarioData.impact_location.latitude,
+        lng: scenarioData.impact_location.longitude
       };
-      console.log('Starting simulation with:', completeScenario);
-      // TODO: Navigate to actual simulation results page
-      alert('Simulation setup complete! (Simulation page to be implemented)');
+      localStorage.setItem('currentImpactLocation', JSON.stringify(coordinates));
+      navigate('/simulation/globe');
     }
   };
 
@@ -220,6 +235,27 @@ const ScenarioSetup = () => {
                     {errors.longitude && <span className="error-message">{errors.longitude}</span>}
                   </div>
                 </div>
+              </div>
+
+              <div className="map-selection">
+                <h4>Or select visually:</h4>
+                <button
+                  type="button"
+                  className="map-btn"
+                  onClick={() => {
+                    // Save current coordinates to localStorage for globe screen
+                    const currentCoords = {
+                      lat: scenarioData.impact_location.latitude,
+                      lng: scenarioData.impact_location.longitude
+                    };
+                    if (currentCoords.lat && currentCoords.lng) {
+                      localStorage.setItem('currentImpactLocation', JSON.stringify(currentCoords));
+                    }
+                    navigate('/simulation/globe');
+                  }}
+                >
+                  🌍 Locate on Map
+                </button>
               </div>
             </div>
           </div>
