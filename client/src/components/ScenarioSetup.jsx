@@ -44,7 +44,9 @@ const ScenarioSetup = () => {
       longitude: ''
     },
     mitigation_strategy: 'none',
-    time_to_impact_years: 10
+    time_to_impact_years: 10,
+    velocity_kms: 25.0,
+    angle_degrees: 45
   });
 
   const [errors, setErrors] = useState({});
@@ -78,8 +80,12 @@ const ScenarioSetup = () => {
       newErrors.longitude = 'Longitude must be between -180 and 180';
     }
 
-    if (!scenarioData.time_to_impact_years || scenarioData.time_to_impact_years < 1) {
-      newErrors.time_to_impact_years = 'Time to impact must be at least 1 year';
+    if (scenarioData.velocity_kms < 1 || scenarioData.velocity_kms > 100) {
+      newErrors.velocity_kms = 'Velocity must be between 1 and 100 km/s';
+    }
+
+    if (scenarioData.angle_degrees < 5 || scenarioData.angle_degrees > 90) {
+      newErrors.angle_degrees = 'Angle must be between 5 and 90 degrees';
     }
 
     setErrors(newErrors);
@@ -218,6 +224,59 @@ const ScenarioSetup = () => {
             </div>
           </div>
 
+          {/* Impact Parameters */}
+          <div className="form-section">
+            <h3 className="section-title">Impact Parameters</h3>
+            
+            <div className="impact-parameters">
+              {/* Velocity Parameter */}
+              <div className="parameter-group">
+                <label className="parameter-label">
+                  Velocity: <span className="parameter-value">{scenarioData.velocity_kms} km/s</span>
+                </label>
+                <div className="slider-container">
+                  <input
+                    type="range"
+                    min="1"
+                    max="100"
+                    step="0.1"
+                    value={scenarioData.velocity_kms}
+                    onChange={(e) => handleInputChange('velocity_kms', parseFloat(e.target.value))}
+                    className="parameter-slider"
+                  />
+                </div>
+                <div className="parameter-range">
+                  <span>1 km/s</span>
+                  <span>100 km/s</span>
+                </div>
+                {errors.velocity_kms && <span className="error-message">{errors.velocity_kms}</span>}
+              </div>
+
+              {/* Angle Parameter */}
+              <div className="parameter-group">
+                <label className="parameter-label">
+                  Impact Angle: <span className="parameter-value">{scenarioData.angle_degrees}°</span>
+                </label>
+                <div className="slider-container">
+                  <input
+                    type="range"
+                    min="5"
+                    max="90"
+                    step="1"
+                    value={scenarioData.angle_degrees}
+                    onChange={(e) => handleInputChange('angle_degrees', parseFloat(e.target.value))}
+                    className="parameter-slider"
+                  />
+                </div>
+                <div className="parameter-range">
+                  <span>5° grazing</span>
+                  <span>90° head-on</span>
+                </div>
+                {errors.angle_degrees && <span className="error-message">{errors.angle_degrees}</span>}
+              </div>
+            </div>
+          </div>
+
           {/* Mitigation Strategy */}
           <div className="form-section">
             <h3 className="section-title">Mitigation Strategy</h3>
@@ -234,27 +293,6 @@ const ScenarioSetup = () => {
                   <p>{strategy.description}</p>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Time to Impact */}
-          <div className="form-section">
-            <h3 className="section-title">Timeline</h3>
-            
-            <div className="form-group">
-              <label htmlFor="time-to-impact">Time to Impact (years)</label>
-              <input
-                id="time-to-impact"
-                type="number"
-                min="1"
-                max="100"
-                placeholder="10"
-                value={scenarioData.time_to_impact_years}
-                onChange={(e) => handleInputChange('time_to_impact_years', e.target.value)}
-                className={errors.time_to_impact_years ? 'error' : ''}
-              />
-              {errors.time_to_impact_years && <span className="error-message">{errors.time_to_impact_years}</span>}
-              <small>How many years until the potential impact?</small>
             </div>
           </div>
 

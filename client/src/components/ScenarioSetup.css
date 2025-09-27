@@ -318,4 +318,112 @@
     width: 100%;
     padding: 1rem 2rem;
   }
+  
+  .impact-parameters {
+    gap: 1.5rem;
+  }
+  
+  .parameter-group {
+    padding: 1rem;
+  }
+  
+  .slider-container {
+    padding: 0;
+  }
+}
+
+/* Impact Parameters Styles */
+.impact-parameters {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.parameter-group {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.parameter-label {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.parameter-value {
+  color: #4ecdc4;
+  font-weight: 700;
+  margin-left: 0.5rem;
+}
+
+.slider-container {
+  width: 100%;
+  padding: 0 0.5rem;
+}
+
+.parameter-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.parameter-slider:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.parameter-slider:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(78, 205, 196, 0.3);
+}
+
+.parameter-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(78, 205, 196, 0.3);
+  transition: all 0.2s ease;
+}
+
+.parameter-slider::-webkit-slider-thumb:hover {
+  background: linear-gradient(135deg, #5ee6d6, #4ecdc4);
+  box-shadow: 0 3px 12px rgba(78, 205, 196, 0.5);
+  transform: scale(1.1);
+}
+
+.parameter-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(78, 205, 196, 0.3);
+  transition: all 0.2s ease;
+}
+
+.parameter-range {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 0 0.5rem;
 }

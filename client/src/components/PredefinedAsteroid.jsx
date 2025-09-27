@@ -5,12 +5,9 @@ import './PredefinedAsteroid.css';
 const PredefinedAsteroid = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedAsteroid, setSelectedAsteroid] = useState(null);
   const [filters, setFilters] = useState({
     asteroidType: 'all',
     diameterRange: [0, 1.5],
-    velocityRange: [1, 100],
-    angleRange: [5, 90],
     structure: 'all'
   });
 
@@ -174,18 +171,10 @@ const PredefinedAsteroid = () => {
       const matchesDiameter = asteroid.diameter >= filters.diameterRange[0] && 
                              asteroid.diameter <= filters.diameterRange[1];
 
-      // Velocity range filter
-      const matchesVelocity = asteroid.velocity >= filters.velocityRange[0] && 
-                             asteroid.velocity <= filters.velocityRange[1];
-
-      // Angle range filter
-      const matchesAngle = asteroid.angle >= filters.angleRange[0] && 
-                          asteroid.angle <= filters.angleRange[1];
-
       // Structure filter
       const matchesStructure = filters.structure === 'all' || asteroid.structure === filters.structure;
 
-      return matchesSearch && matchesType && matchesDiameter && matchesVelocity && matchesAngle && matchesStructure;
+      return matchesSearch && matchesType && matchesDiameter && matchesStructure;
     });
 
     // If no search query or filters are applied, show most popular
@@ -193,10 +182,6 @@ const PredefinedAsteroid = () => {
         filters.asteroidType === 'all' && 
         filters.diameterRange[0] === 0 && 
         filters.diameterRange[1] === 1.5 && 
-        filters.velocityRange[0] === 1 && 
-        filters.velocityRange[1] === 100 && 
-        filters.angleRange[0] === 5 && 
-        filters.angleRange[1] === 90 && 
         filters.structure === 'all') {
       filtered = filtered.sort((a, b) => b.popularity - a.popularity).slice(0, 5);
     } else {
@@ -210,15 +195,9 @@ const PredefinedAsteroid = () => {
   const filteredAsteroids = getFilteredAsteroids();
 
   const handleAsteroidSelect = (asteroid) => {
-    setSelectedAsteroid(asteroid);
-  };
-
-  const handleConfirm = () => {
-    if (selectedAsteroid) {
-      // Store selected asteroid data (you might want to use context or state management)
-      localStorage.setItem('selectedAsteroid', JSON.stringify(selectedAsteroid));
-      navigate('/simulation/scenario-setup');
-    }
+    // Store selected asteroid data and navigate directly to scenario setup
+    localStorage.setItem('selectedAsteroid', JSON.stringify(asteroid));
+    navigate('/scenario-setup');
   };
 
   const handleFilterChange = (filterType, value) => {
@@ -235,26 +214,10 @@ const PredefinedAsteroid = () => {
     }));
   };
 
-  const handleVelocityRangeChange = (newRange) => {
-    setFilters(prev => ({
-      ...prev,
-      velocityRange: newRange
-    }));
-  };
-
-  const handleAngleRangeChange = (newRange) => {
-    setFilters(prev => ({
-      ...prev,
-      angleRange: newRange
-    }));
-  };
-
   const resetFilters = () => {
     setFilters({
       asteroidType: 'all',
       diameterRange: [0, 1.5],
-      velocityRange: [1, 100],
-      angleRange: [5, 90],
       structure: 'all'
     });
     setSearchQuery('');
@@ -334,34 +297,7 @@ const PredefinedAsteroid = () => {
               </div>
             </div>
 
-            {/* Velocity Range Filter */}
-            <div className="control-item">
-              <label>Velocity: <span className="value">{filters.velocityRange[0]} - {filters.velocityRange[1]} km/s</span></label>
-              <div className="dual-range-container">
-                <input
-                  type="range"
-                  min="1"
-                  max="100"
-                  step="0.1"
-                  value={filters.velocityRange[0]}
-                  onChange={(e) => handleVelocityRangeChange([parseFloat(e.target.value), filters.velocityRange[1]])}
-                  className="compact-slider range-min"
-                />
-                <input
-                  type="range"
-                  min="1"
-                  max="100"
-                  step="0.1"
-                  value={filters.velocityRange[1]}
-                  onChange={(e) => handleVelocityRangeChange([filters.velocityRange[0], parseFloat(e.target.value)])}
-                  className="compact-slider range-max"
-                />
-              </div>
-              <div className="range-labels">
-                <span>1 km/s</span>
-                <span>100 km/s</span>
-              </div>
-            </div>
+            {/* Structure Filter */}
 
             {/* Angle Range Filter */}
             <div className="control-item">
@@ -419,7 +355,7 @@ const PredefinedAsteroid = () => {
           {filteredAsteroids.map((asteroid) => (
             <div
               key={asteroid.id}
-              className={`asteroid-card ${selectedAsteroid?.id === asteroid.id ? 'selected' : ''}`}
+              className="asteroid-card"
               onClick={() => handleAsteroidSelect(asteroid)}
             >
               <div className="asteroid-header-info">
@@ -459,18 +395,6 @@ const PredefinedAsteroid = () => {
             </div>
           ))}
         </div>
-
-        {selectedAsteroid && (
-          <div className="selection-confirmation">
-            <div className="selected-info">
-              <h3>Selected: {selectedAsteroid.name}</h3>
-              <p>Continue to scenario setup with this asteroid</p>
-            </div>
-            <button className="confirm-btn" onClick={handleConfirm}>
-              Continue to Scenario Setup →
-            </button>
-          </div>
-        )}
 
         {filteredAsteroids.length === 0 && searchQuery && (
           <div className="no-results">

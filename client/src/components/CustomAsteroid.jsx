@@ -6,9 +6,8 @@ const CustomAsteroid = () => {
   const navigate = useNavigate();
   const [asteroidData, setAsteroidData] = useState({
     diameter_km: 0.5,
+  
     type: 'stone asteroid',
-    velocity_kms: 25.0,
-    angle_degrees: 45,
     orbit_type: 'elliptical',
     // Orbital elements (for manual orbit)
     a: '', // semimajor axis (AU)
@@ -28,16 +27,10 @@ const CustomAsteroid = () => {
       newErrors.diameter_km = 'Diameter must be between 0.07 and 1.5 km';
     }
 
+    
+
     if (!asteroidData.type) {
       newErrors.type = 'Asteroid type is required';
-    }
-
-    if (asteroidData.velocity_kms < 1 || asteroidData.velocity_kms > 100) {
-      newErrors.velocity_kms = 'Velocity must be between 1 and 100 km/s';
-    }
-
-    if (asteroidData.angle_degrees < 5 || asteroidData.angle_degrees > 90) {
-      newErrors.angle_degrees = 'Angle must be between 5 and 90 degrees';
     }
 
     if (asteroidData.orbit_type === 'manual') {
@@ -84,7 +77,7 @@ const CustomAsteroid = () => {
       };
       // Store custom asteroid data
       localStorage.setItem('selectedAsteroid', JSON.stringify(customAsteroid));
-      navigate('/simulation/scenario-setup');
+      navigate('/scenario-setup');
     }
   };
 
@@ -100,75 +93,42 @@ const CustomAsteroid = () => {
 
         <form onSubmit={handleSubmit} className="custom-form">
           {/* Physical Properties */}
-          <div className="form-section compact">
+          <div className="form-section">
             <h3 className="section-title">Physical Properties</h3>
             
-            <div className="controls-grid">
-              {/* Diameter Slider */}
-              <div className="control-item">
-                <label>Diameter: <span className="value">{asteroidData.diameter_km} km</span></label>
-                <input
-                  type="range"
-                  min="0.07"
-                  max="1.5"
-                  step="0.01"
-                  value={asteroidData.diameter_km}
-                  onChange={(e) => handleInputChange('diameter_km', parseFloat(e.target.value))}
-                  className="compact-slider"
-                />
-                <div className="range-labels">
-                  <span>0.07</span>
+            <div className="impact-parameters">
+              {/* Diameter Parameter */}
+              <div className="parameter-group">
+                <label className="parameter-label">
+                  Diameter: <span className="parameter-value">{asteroidData.diameter_km} km</span>
+                </label>
+                <div className="slider-container">
+                  <input
+                    type="range"
+                    min="0.07"
+                    max="1.5"
+                    step="0.01"
+                    value={asteroidData.diameter_km}
+                    onChange={(e) => handleInputChange('diameter_km', parseFloat(e.target.value))}
+                    className="parameter-slider"
+                  />
+                </div>
+                <div className="parameter-range">
+                  <span>0.07 km</span>
                   <span>1.5 km</span>
                 </div>
                 {errors.diameter_km && <span className="error-message">{errors.diameter_km}</span>}
               </div>
 
-              {/* Velocity Slider */}
-              <div className="control-item">
-                <label>Velocity: <span className="value">{asteroidData.velocity_kms} km/s</span></label>
-                <input
-                  type="range"
-                  min="1"
-                  max="100"
-                  step="0.1"
-                  value={asteroidData.velocity_kms}
-                  onChange={(e) => handleInputChange('velocity_kms', parseFloat(e.target.value))}
-                  className="compact-slider"
-                />
-                <div className="range-labels">
-                  <span>1</span>
-                  <span>100 km/s</span>
-                </div>
-                {errors.velocity_kms && <span className="error-message">{errors.velocity_kms}</span>}
-              </div>
-
-              {/* Impact Angle Slider */}
-              <div className="control-item">
-                <label>Angle: <span className="value">{asteroidData.angle_degrees}°</span></label>
-                <input
-                  type="range"
-                  min="5"
-                  max="90"
-                  step="1"
-                  value={asteroidData.angle_degrees}
-                  onChange={(e) => handleInputChange('angle_degrees', parseFloat(e.target.value))}
-                  className="compact-slider"
-                />
-                <div className="range-labels">
-                  <span>5° grazing</span>
-                  <span>90° head-on</span>
-                </div>
-                {errors.angle_degrees && <span className="error-message">{errors.angle_degrees}</span>}
-              </div>
-
+              
               {/* Asteroid Type */}
-              <div className="control-item">
-                <label htmlFor="type">Type</label>
+              <div className="parameter-group">
+                <label className="parameter-label" htmlFor="type">Asteroid Type</label>
                 <select
                   id="type"
                   value={asteroidData.type}
                   onChange={(e) => handleInputChange('type', e.target.value)}
-                  className={`compact-select ${errors.type ? 'error' : ''}`}
+                  className={`parameter-select ${errors.type ? 'error' : ''}`}
                 >
                   <option value="stone asteroid">Stone Asteroid</option>
                   <option value="iron asteroid">Iron Asteroid</option>
