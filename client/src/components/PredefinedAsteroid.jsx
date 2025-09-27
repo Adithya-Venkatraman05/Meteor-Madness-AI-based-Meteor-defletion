@@ -20,6 +20,24 @@ const PredefinedAsteroid = () => {
     structure: 'all'
   });
 
+  // Modal state for tooltips
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: '', description: '' });
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && showModal) {
+        closeModal();
+      }
+    };
+
+    if (showModal) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showModal]);
+
   // Function to call the autocomplete API
   const fetchAutocompleteSuggestions = async (query) => {
     if (!query || query.length < 2) {
@@ -182,6 +200,174 @@ const PredefinedAsteroid = () => {
       structure: 'all'
     });
     setSearchQuery('');
+  };
+
+  // Function to open modal with parameter information
+  const openModal = (title, description) => {
+    setModalContent({ title, description });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setModalContent({ title: '', description: '' });
+  };
+
+  // Helper function to get tooltip explanations for physical parameters
+  const getPhysicalParameterTooltip = (paramName) => {
+    const tooltips = {
+      'absolute magnitude': 'Brightness of the asteroid at 1 AU from both the Sun and observer. Lower H = brighter = usually larger.',
+      'H': 'Brightness of the asteroid at 1 AU from both the Sun and observer. Lower H = brighter = usually larger.',
+      'diameter': 'The effective size of the asteroid, typically derived from brightness and albedo.',
+      'rotation period': 'Time the asteroid takes to complete one full spin on its axis.',
+      'rotation': 'Time the asteroid takes to complete one full spin on its axis.',
+      'geometric albedo': 'Reflectivity of the asteroid\'s surface (higher = shinier, reflects more sunlight).',
+      'albedo': 'Reflectivity of the asteroid\'s surface (higher = shinier, reflects more sunlight).',
+      'B-V': 'Color index (blue minus visual); indicates surface composition and age.',
+      'U-B': 'Color index (ultraviolet minus blue); also helps identify asteroid composition/spectral type.',
+      'extent': 'The asteroid\'s dimensions (length × width × height). Irregular shapes can affect how it tumbles through space.',
+      'mass': 'How much matter the asteroid contains. Heavier asteroids are harder to deflect but carry more destructive energy.',
+      'density': 'How tightly packed the asteroid\'s material is. Higher density often means solid rock/metal, lower density suggests rubble pile.',
+      'slope parameter': 'How asteroid brightness changes with viewing angle. Helps determine surface composition and roughness.',
+      'G': 'Phase slope parameter - describes how brightness changes with sun-earth-asteroid angle. Indicates surface properties.'
+    };
+    
+    const key = Object.keys(tooltips).find(k => paramName.toLowerCase().includes(k.toLowerCase()));
+    return key ? tooltips[key] : 'Physical property of the asteroid that affects its behavior, detectability, and potential impact effects.';
+  };
+
+  // Helper function to get tooltip explanations for orbital elements
+  const getOrbitalElementTooltip = (elementLabel) => {
+    const tooltips = {
+      'e': 'How stretched the orbit is (0 = circular, closer to 1 = elongated).',
+      'a': 'Average distance from the asteroid to the Sun (in AU).',
+      'q': 'Closest point to the Sun in the orbit.',
+      'i': 'Tilt of the orbit relative to the solar system\'s plane.',
+      'om': 'Where the orbit crosses the reference plane from south to north.',
+      'node': 'Where the orbit crosses the reference plane from south to north.',
+      'omega': 'Where the orbit crosses the reference plane from south to north.',
+      'w': 'Angle describing where perihelion lies within the orbit.',
+      'peri': 'Angle describing where perihelion lies within the orbit.',
+      'ma': 'Position of the asteroid in its orbit at the given epoch.',
+      'M': 'Position of the asteroid in its orbit at the given epoch.',
+      'tp': 'Exact time when the asteroid last passed its closest point to the Sun.',
+      'per': 'Time to complete one orbit around the Sun.',
+      'period': 'Time to complete one orbit around the Sun.',
+      'n': 'Average angular speed of the asteroid along its orbit.',
+      'ad': 'Farthest point from the Sun in the orbit.',
+      'Q': 'Farthest point from the Sun in the orbit.',
+      'epoch': 'Reference date for which these orbital elements are calculated.',
+      'moid': 'Closest distance the asteroid\'s orbit comes to Earth\'s orbit (important for hazard assessment).',
+      'condition_code': 'Quality of orbit determination (0 = very certain, 9 = very uncertain).',
+      'n_obs_used': 'Number of observations contributing to orbit calculation.',
+      'data_arc': 'Time span between the first and last observations of the asteroid.',
+      'rms': 'Root mean square of orbital fit residuals; lower = more accurate orbit.'
+    };
+    
+    return tooltips[elementLabel.toLowerCase()] || 'Orbital parameter that describes how the asteroid moves through space, affecting its predictability and approach to Earth.';
+  };
+
+  // Modal Component
+  const InfoModal = () => {
+    if (!showModal) return null;
+
+    return (
+      <div 
+        className="modal-overlay"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          // background: 'linear-gradient(135deg, rgba(0, 15, 35, 0.85), rgba(0, 5, 15, 0.9))',
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          backdropFilter: 'blur(2px)'
+        }}
+        onClick={closeModal}
+      >
+        <div 
+          className="modal-content"
+          style={{
+            background: 'linear-gradient(135deg, rgba(85, 83, 83, 0.82), rgba(109, 109, 109, 0.8))',
+            borderRadius: '20px',
+            padding: '30px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+            border: '2px solid rgba(255, 255, 255, 0.2)',
+            position: 'relative',
+            color: '#ffffff',
+            backdropFilter: 'blur(15px)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={closeModal}
+            style={{
+              position: 'absolute',
+              top: '15px',
+              right: '20px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '2px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '25%',
+              width: '35px',
+              height: '35px',
+              cursor: 'pointer',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(255, 75, 75, 0.2)';
+              e.target.style.color = '#ff6b6b';
+              e.target.style.transform = 'scale(1.1)';
+              e.target.style.borderColor = 'rgba(255, 107, 107, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.target.style.color = '#ffffff';
+              e.target.style.transform = 'scale(1)';
+              e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+          >
+            x
+          </button>
+          
+          <h3 style={{
+            margin: '0 0 20px 0',
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            color: '#ffffff',
+            borderBottom: '3px solid #4ecdc4',
+            paddingBottom: '10px',
+            paddingRight: '50px',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+          }}>
+            {modalContent.title}
+          </h3>
+          
+          <p style={{
+            margin: 0,
+            fontSize: '1.1rem',
+            lineHeight: '1.6',
+            color: 'rgba(255, 255, 255, 0.9)'
+          }}>
+            {modalContent.description}
+          </p>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -375,62 +561,89 @@ const PredefinedAsteroid = () => {
 
         {asteroidDetails && (
           <div className="asteroid-details" style={{
-            backgroundColor: '#000102ff',
-            border: '1px solid #e9ecef',
-            borderRadius: '12px',
-            padding: '24px',
-            marginTop: '20px'
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(245, 245, 245, 0.05))',
+            border: '2px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '20px',
+            padding: '32px',
+            marginTop: '24px',
+            backdropFilter: 'blur(15px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
           }}>
             {/* Header Information */}
             <div className="asteroid-header" style={{
-              borderBottom: '2px solid #dee2e6',
-              paddingBottom: '16px',
-              marginBottom: '24px'
+              borderBottom: '2px solid rgba(78, 205, 196, 0.3)',
+              paddingBottom: '20px',
+              marginBottom: '24px',
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '12px',
+              padding: '20px'
             }}>
-              <h2 style={{ margin: '0 0 8px 0', color: '#b4b4b4ff' }}>
+              <h2 style={{ 
+                margin: '0 0 12px 0', 
+                color: '#ffffff',
+                fontSize: '1.8rem',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+              }}>
                 {asteroidDetails.object?.fullname || asteroidDetails.object?.shortname || 'Unknown Asteroid'}
               </h2>
               <div className="asteroid-badges" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {asteroidDetails.object?.neo && (
                   <span style={{
-                    backgroundColor: '#b4b4b4ff',
-                    color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '12px',
+                    background: 'linear-gradient(45deg, #f8f9fa, #e9ecef)',
+                    color: '#333',
+                    padding: '6px 12px',
+                    borderRadius: '15px',
                     fontSize: '12px',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 8px rgba(255, 255, 255, 0.3)'
                   }}>NEO</span>
                 )}
                 {asteroidDetails.object?.pha && (
                   <span style={{
-                    backgroundColor: '#dc3545',
-                    color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '12px',
+                    background: 'linear-gradient(45deg, #dee2e6, #ced4da)',
+                    color: '#495057',
+                    padding: '6px 12px',
+                    borderRadius: '15px',
                     fontSize: '12px',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 8px rgba(222, 226, 230, 0.3)'
                   }}>PHA</span>
                 )}
                 {asteroidDetails.object?.orbit_class && (
                   <span style={{
-                    backgroundColor: '#afafafff',
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
                     color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '12px',
+                    padding: '6px 12px',
+                    borderRadius: '15px',
                     fontSize: '12px',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
                   }}>{asteroidDetails.object.orbit_class.name}</span>
                 )}
               </div>
-              <p style={{ margin: '8px 0 0 0', color: '#6c757d' }}>
-                ID: {asteroidDetails.object?.des || asteroidDetails.object?.spkid || 'N/A'}
+              <p style={{ 
+                margin: '12px 0 0 0', 
+                color: 'rgba(255, 255, 255, 0.7)',
+                fontSize: '1.1rem',
+                fontWeight: '500'
+              }}>
+                ID: <span style={{ color: '#f8f9fa', fontWeight: 'bold' }}>{asteroidDetails.object?.des || asteroidDetails.object?.spkid || 'N/A'}</span>
               </p>
             </div>
 
             {/* Physical Parameters */}
             {asteroidDetails.phys_par && asteroidDetails.phys_par.length > 0 && (
               <div className="physical-parameters" style={{ marginBottom: '24px' }}>
-                <h3 style={{ color: '#495057', marginBottom: '16px' }}>Physical Parameters</h3>
+                <h3 style={{ 
+                  color: '#f8f9fa', 
+                  marginBottom: '20px',
+                  fontSize: '1.4rem',
+                  fontWeight: 'bold',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                  borderBottom: '2px solid rgba(255, 255, 255, 0.3)',
+                  paddingBottom: '8px'
+                }}>Physical Parameters</h3>
                 <div className="params-grid" style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
@@ -438,24 +651,77 @@ const PredefinedAsteroid = () => {
                 }}>
                   {asteroidDetails.phys_par.map((param, index) => (
                     <div key={index} className="param-item" style={{
-                      backgroundColor: 'white',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid #e9ecef'
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      padding: '16px',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255, 138, 45, 0.2)',
+                      backdropFilter: 'blur(10px)',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer',
+                      position: 'relative'
                     }}>
-                      <div style={{ fontWeight: 'bold', color: '#2c3e50', marginBottom: '4px' }}>
+                      {/* Info Button */}
+                      <div 
+                        className="info-button"
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          right: '8px',
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px',
+                          color: '#ffffff',
+                          cursor: 'help',
+                          fontWeight: 'bold',
+                          fontStyle: 'italic',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        onClick={() => openModal(
+                          param.title || param.name,
+                          getPhysicalParameterTooltip(param.title || param.name)
+                        )}
+                      >
+                        i
+                      </div>
+                      
+                      <div style={{ 
+                        fontWeight: 'bold', 
+                        color: '#ffffff', 
+                        marginBottom: '6px',
+                        fontSize: '1.1rem',
+                        paddingRight: '30px'
+                      }}>
                         {param.title || param.name}
                       </div>
-                      <div style={{ fontSize: '16px', color: '#495057', marginBottom: '4px' }}>
-                        {param.value} {param.units && <span style={{ color: '#6c757d' }}>({param.units})</span>}
+                      <div style={{ 
+                        fontSize: '16px', 
+                        color: '#e9ecef', 
+                        marginBottom: '6px',
+                        fontWeight: '600'
+                      }}>
+                        {param.value} {param.units && <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>({param.units})</span>}
                       </div>
                       {param.sigma && (
-                        <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>
                           σ: {param.sigma}
                         </div>
                       )}
                       {param.desc && (
-                        <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
+                        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginTop: '6px' }}>
                           {param.desc}
                         </div>
                       )}
@@ -468,21 +734,240 @@ const PredefinedAsteroid = () => {
             {/* Orbital Elements */}
             {asteroidDetails.orbit && (
               <div className="orbital-elements" style={{ marginBottom: '24px' }}>
-                <h3 style={{ color: '#495057', marginBottom: '16px' }}>Orbital Elements</h3>
+                <h3 style={{ 
+                  color: '#4ecdc4', 
+                  marginBottom: '20px',
+                  fontSize: '1.4rem',
+                  fontWeight: 'bold',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                  borderBottom: '2px solid rgba(78, 205, 196, 0.3)',
+                  paddingBottom: '8px'
+                }}>Orbital Elements</h3>
                 <div className="orbit-info" style={{
-                  backgroundColor: 'white',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  border: '1px solid #e9ecef',
-                  marginBottom: '16px'
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  padding: '20px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 138, 45, 0.2)',
+                  marginBottom: '20px',
+                  backdropFilter: 'blur(10px)'
                 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
-                    <div><strong>Epoch:</strong> {asteroidDetails.orbit.epoch}</div>
-                    <div><strong>MOID:</strong> {asteroidDetails.orbit.moid} AU</div>
-                    <div><strong>Condition Code:</strong> {asteroidDetails.orbit.condition_code}</div>
-                    <div><strong>Observations Used:</strong> {asteroidDetails.orbit.n_obs_used}</div>
-                    <div><strong>Data Arc:</strong> {asteroidDetails.orbit.data_arc} days</div>
-                    <div><strong>RMS:</strong> {asteroidDetails.orbit.rms}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                    <div style={{ color: 'rgba(255, 255, 255, 0.9)', position: 'relative', padding: '8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      <div 
+                        className="info-button"
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '10px',
+                          color: '#ffffff',
+                          cursor: 'help',
+                          fontWeight: 'bold',
+                          fontStyle: 'italic',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        onClick={() => openModal('Epoch', 'Reference date for which these orbital elements are calculated.')}
+                      >
+                        i
+                      </div>
+                      <strong style={{ color: '#f8f9fa' }}>Epoch:</strong> {asteroidDetails.orbit.epoch}
+                    </div>
+                    <div style={{ color: 'rgba(255, 255, 255, 0.9)', position: 'relative', padding: '8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      <div 
+                        className="info-button"
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '10px',
+                          color: '#ffffff',
+                          cursor: 'help',
+                          fontWeight: 'bold',
+                          fontStyle: 'italic',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        onClick={() => openModal('MOID (Minimum Orbit Intersection Distance)', "Closest distance the asteroid's orbit comes to Earth's orbit (important for hazard assessment).")}
+                      >
+                        i
+                      </div>
+                      <strong style={{ color: '#f8f9fa' }}>MOID:</strong> {asteroidDetails.orbit.moid} AU
+                    </div>
+                    <div style={{ color: 'rgba(255, 255, 255, 0.9)', position: 'relative', padding: '8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      <div 
+                        className="info-button"
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '10px',
+                          color: '#ffffff',
+                          cursor: 'help',
+                          fontWeight: 'bold',
+                          fontStyle: 'italic',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        onClick={() => openModal('Condition Code', 'Quality of orbit determination (0 = very certain, 9 = very uncertain).')}
+                      >
+                        i
+                      </div>
+                      <strong style={{ color: '#f8f9fa' }}>Condition Code:</strong> {asteroidDetails.orbit.condition_code}
+                    </div>
+                    <div style={{ color: 'rgba(255, 255, 255, 0.9)', position: 'relative', padding: '8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      <div 
+                        className="info-button"
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '10px',
+                          color: '#ffffff',
+                          cursor: 'help',
+                          fontWeight: 'bold',
+                          fontStyle: 'italic',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        onClick={() => openModal('Observations Used', 'Number of observations contributing to orbit calculation.')}
+                      >
+                        i
+                      </div>
+                      <strong style={{ color: '#f8f9fa' }}>Observations Used:</strong> {asteroidDetails.orbit.n_obs_used}
+                    </div>
+                    <div style={{ color: 'rgba(255, 255, 255, 0.9)', position: 'relative', padding: '8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      <div 
+                        className="info-button"
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '10px',
+                          color: '#ffffff',
+                          cursor: 'help',
+                          fontWeight: 'bold',
+                          fontStyle: 'italic',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        onClick={() => openModal('Data Arc', 'Time span between the first and last observations of the asteroid.')}
+                      >
+                        i
+                      </div>
+                      <strong style={{ color: '#f8f9fa' }}>Data Arc:</strong> {asteroidDetails.orbit.data_arc} days
+                    </div>
+                    <div style={{ color: 'rgba(255, 255, 255, 0.9)', position: 'relative', padding: '8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      <div 
+                        className="info-button"
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '10px',
+                          color: '#ffffff',
+                          cursor: 'help',
+                          fontWeight: 'bold',
+                          fontStyle: 'italic',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        onClick={() => openModal('RMS (Root Mean Square)', 'Root mean square of orbital fit residuals; lower = more accurate orbit.')}
+                      >
+                        i
+                      </div>
+                      <strong style={{ color: '#f8f9fa' }}>RMS:</strong> {asteroidDetails.orbit.rms}
+                    </div>
                   </div>
                 </div>
                 
@@ -494,19 +979,72 @@ const PredefinedAsteroid = () => {
                   }}>
                     {asteroidDetails.orbit.elements.map((element, index) => (
                       <div key={index} className="element-item" style={{
-                        backgroundColor: 'white',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        border: '1px solid #e9ecef'
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        padding: '16px',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer',
+                        position: 'relative'
                       }}>
-                        <div style={{ fontWeight: 'bold', color: '#2c3e50', marginBottom: '4px' }}>
+                        {/* Info Button */}
+                        <div 
+                          className="info-button"
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            color: '#ffffff',
+                            cursor: 'help',
+                            fontWeight: 'bold',
+                            fontStyle: 'italic',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                            e.target.style.transform = 'scale(1.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                            e.target.style.transform = 'scale(1)';
+                          }}
+                          onClick={() => openModal(
+                            `${element.title} (${element.label})`,
+                            getOrbitalElementTooltip(element.label)
+                          )}
+                        >
+                          i
+                        </div>
+                        
+                        <div style={{ 
+                          fontWeight: 'bold', 
+                          color: '#ffffff', 
+                          marginBottom: '6px',
+                          fontSize: '1.1rem',
+                          paddingRight: '30px'
+                        }}>
                           {element.title} ({element.label})
                         </div>
-                        <div style={{ fontSize: '16px', color: '#495057', marginBottom: '4px' }}>
-                          {element.value} {element.units && <span style={{ color: '#6c757d' }}>({element.units})</span>}
+                        <div style={{ 
+                          fontSize: '16px', 
+                          color: '#e9ecef', 
+                          marginBottom: '6px',
+                          fontWeight: '600'
+                        }}>
+                          {element.value} {element.units && <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>({element.units})</span>}
                         </div>
                         {element.sigma && (
-                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                          <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>
                             σ: {element.sigma}
                           </div>
                         )}
@@ -520,47 +1058,203 @@ const PredefinedAsteroid = () => {
             {/* Data Quality Information */}
             {asteroidDetails.orbit && (
               <div className="data-quality" style={{ marginBottom: '24px' }}>
-                <h3 style={{ color: '#495057', marginBottom: '16px' }}>Data Quality & Provenance</h3>
+                <h3 style={{ 
+                  color: '#4ecdc4', 
+                  marginBottom: '20px',
+                  fontSize: '1.4rem',
+                  fontWeight: 'bold',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                  borderBottom: '2px solid rgba(78, 205, 196, 0.3)',
+                  paddingBottom: '8px'
+                }}>Data Quality & Provenance</h3>
                 <div className="quality-grid" style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                   gap: '12px'
                 }}>
                   <div className="quality-item" style={{
-                    backgroundColor: 'white',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: '1px solid #e9ecef'
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(78, 205, 196, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    position: 'relative'
                   }}>
-                    <div style={{ fontWeight: 'bold', color: '#2c3e50' }}>First Observation</div>
-                    <div style={{ color: '#495057' }}>{asteroidDetails.orbit.first_obs || 'N/A'}</div>
+                    <div 
+                      className="info-button"
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        color: '#ffffff',
+                        cursor: 'help',
+                        fontWeight: 'bold',
+                        fontStyle: 'italic',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                        e.target.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                        e.target.style.transform = 'scale(1)';
+                      }}
+                      onClick={() => openModal('First Observation', 'When this asteroid was first spotted by astronomers. Older observations mean more reliable orbit predictions.')}
+                    >
+                      i
+                    </div>
+                    <div style={{ fontWeight: 'bold', color: '#ffffff', marginBottom: '4px', paddingRight: '30px' }}>First Observation</div>
+                    <div style={{ color: '#e9ecef', fontWeight: '600' }}>{asteroidDetails.orbit.first_obs || 'N/A'}</div>
                   </div>
                   <div className="quality-item" style={{
-                    backgroundColor: 'white',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: '1px solid #e9ecef'
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(78, 205, 196, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    position: 'relative'
                   }}>
-                    <div style={{ fontWeight: 'bold', color: '#2c3e50' }}>Last Observation</div>
-                    <div style={{ color: '#495057' }}>{asteroidDetails.orbit.last_obs || 'N/A'}</div>
+                    <div 
+                      className="info-button"
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        color: '#ffffff',
+                        cursor: 'help',
+                        fontWeight: 'bold',
+                        fontStyle: 'italic',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                        e.target.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                        e.target.style.transform = 'scale(1)';
+                      }}
+                      onClick={() => openModal('Last Observation', 'The most recent observation of this asteroid. Recent observations provide more accurate current position data.')}
+                    >
+                      i
+                    </div>
+                    <div style={{ fontWeight: 'bold', color: '#ffffff', marginBottom: '4px', paddingRight: '30px' }}>Last Observation</div>
+                    <div style={{ color: '#4ecdc4', fontWeight: '600' }}>{asteroidDetails.orbit.last_obs || 'N/A'}</div>
                   </div>
                   <div className="quality-item" style={{
-                    backgroundColor: 'white',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: '1px solid #e9ecef'
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(78, 205, 196, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    position: 'relative'
                   }}>
-                    <div style={{ fontWeight: 'bold', color: '#2c3e50' }}>Solution Date</div>
-                    <div style={{ color: '#495057' }}>{asteroidDetails.orbit.soln_date || 'N/A'}</div>
+                    <div 
+                      className="info-button"
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        color: '#ffffff',
+                        cursor: 'help',
+                        fontWeight: 'bold',
+                        fontStyle: 'italic',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                        e.target.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                        e.target.style.transform = 'scale(1)';
+                      }}
+                      onClick={() => openModal('Solution Date', 'When these orbital calculations were last updated. More recent solutions are generally more accurate.')}
+                    >
+                      i
+                    </div>
+                    <div style={{ fontWeight: 'bold', color: '#ffffff', marginBottom: '4px', paddingRight: '30px' }}>Solution Date</div>
+                    <div style={{ color: '#4ecdc4', fontWeight: '600' }}>{asteroidDetails.orbit.soln_date || 'N/A'}</div>
                   </div>
                   <div className="quality-item" style={{
-                    backgroundColor: 'white',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: '1px solid #e9ecef'
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(78, 205, 196, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    position: 'relative'
                   }}>
-                    <div style={{ fontWeight: 'bold', color: '#2c3e50' }}>Producer</div>
-                    <div style={{ color: '#495057' }}>{asteroidDetails.orbit.producer || 'N/A'}</div>
+                    <div 
+                      className="info-button"
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        color: '#ffffff',
+                        cursor: 'help',
+                        fontWeight: 'bold',
+                        fontStyle: 'italic',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                        e.target.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                        e.target.style.transform = 'scale(1)';
+                      }}
+                      onClick={() => openModal('Producer', 'The organization or system that calculated these orbital parameters (e.g., JPL, MPC). Different producers may have slightly different accuracy.')}
+                    >
+                      i
+                    </div>
+                    <div style={{ fontWeight: 'bold', color: '#ffffff', marginBottom: '4px', paddingRight: '30px' }}>Producer</div>
+                    <div style={{ color: '#4ecdc4', fontWeight: '600' }}>{asteroidDetails.orbit.producer || 'N/A'}</div>
                   </div>
                 </div>
               </div>
@@ -569,8 +1263,9 @@ const PredefinedAsteroid = () => {
             {/* Continue to Scenario Setup Button */}
             <div className="action-section" style={{
               textAlign: 'center',
-              paddingTop: '16px',
-              borderTop: '1px solid #dee2e6'
+              paddingTop: '24px',
+              borderTop: '2px solid rgba(255, 255, 255, 0.3)',
+              marginTop: '24px'
             }}>
               <button
                 onClick={() => {
@@ -578,18 +1273,27 @@ const PredefinedAsteroid = () => {
                   handleAsteroidSelect(asteroidDetails);
                 }}
                 style={{
-                  backgroundColor: '#007bff',
-                  color: 'white',
+                  background: 'linear-gradient(45deg, #f8f9fa, #e9ecef)',
+                  color: '#495057',
                   border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontSize: '16px',
+                  padding: '16px 32px',
+                  borderRadius: '50px',
+                  fontSize: '18px',
                   fontWeight: 'bold',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s'
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(255, 255, 255, 0.3)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px'
                 }}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#0056b3'}
-                onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(255, 255, 255, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 15px rgba(255, 255, 255, 0.3)';
+                }}
               >
                 Continue to Scenario Setup
               </button>
@@ -611,6 +1315,9 @@ const PredefinedAsteroid = () => {
           </div>
         )}
       </div>
+      
+      {/* Info Modal */}
+      <InfoModal />
     </div>
   );
 };

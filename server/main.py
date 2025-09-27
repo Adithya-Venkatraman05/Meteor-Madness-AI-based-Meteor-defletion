@@ -285,7 +285,7 @@ async def asteroid_details(
         response.raise_for_status()
         
         data = response.json()
-        print(data)
+
         # Check if we got valid data
         if data.get("object"):
             logger.info(f"Successfully retrieved detailed data for: {name} (searched as: {clean_name})")

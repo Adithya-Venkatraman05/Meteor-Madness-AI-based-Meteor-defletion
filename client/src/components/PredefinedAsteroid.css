@@ -4,6 +4,36 @@
   padding: 1rem 2rem;
   position: relative;
   z-index: 20;
+  background: 
+    radial-gradient(ellipse at top, transparent 0%, rgba(0, 0, 0, 0.8) 70%),
+    radial-gradient(ellipse at bottom, transparent 0%, rgba(0, 0, 20, 0.6) 70%),
+    radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 50, 0.4) 70%);
+}
+
+/* Space Scene Stars */
+.predefined-asteroid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+    radial-gradient(2px 2px at 160px 30px, #fff, transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: sparkle 20s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes sparkle {
+  0% { transform: translateX(0px); }
+  100% { transform: translateX(-200px); }
 }
 
 .predefined-container {
@@ -505,6 +535,65 @@
 
 .no-results p {
   margin-bottom: 0.5rem;
+}
+
+/* Asteroid Details Enhancements */
+.asteroid-details .param-item:hover,
+.asteroid-details .element-item:hover,
+.asteroid-details .quality-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+}
+
+.asteroid-details .asteroid-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.asteroid-details .asteroid-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  animation: shimmer 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.loading-details {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 15px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.search-instructions {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 15px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.search-instructions h3 {
+  color: #f8f9fa !important;
+  margin-bottom: 16px !important;
+}
+
+.search-instructions p {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.search-instructions strong {
+  color: #e9ecef !important;
 }
 
 /* Responsive Design */
