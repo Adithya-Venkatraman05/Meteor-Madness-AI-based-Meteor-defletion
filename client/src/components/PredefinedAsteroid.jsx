@@ -1,15 +1,114 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './PredefinedAsteroid.css';
 
 const PredefinedAsteroid = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const searchRef = useRef(null);
+  const dropdownRef = useRef(null);
   const [filters, setFilters] = useState({
     asteroidType: 'all',
     diameterRange: [0, 1.5],
     structure: 'all'
   });
+
+  // Function to call the autocomplete API
+  const fetchAutocompleteSuggestions = async (query) => {
+    if (!query || query.length < 2) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `http://localhost:8000/asteroids/autocomplete?query=${encodeURIComponent(query)}&limit=10`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.results || []);
+        setShowDropdown(true);
+      } else {
+        console.error('Failed to fetch autocomplete suggestions:', response.statusText);
+        setSuggestions([]);
+        setShowDropdown(false);
+      }
+    } catch (error) {
+      console.error('Error fetching autocomplete suggestions:', error);
+      setSuggestions([]);
+      setShowDropdown(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchAutocompleteSuggestions(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+          searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowDropdown(false);
+        setSelectedSuggestionIndex(-1);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle suggestion selection
+  const handleSuggestionSelect = (suggestion) => {
+    setSearchQuery(suggestion.display_name || suggestion.name || '');
+    setShowDropdown(false);
+    setSelectedSuggestionIndex(-1);
+    setSuggestions([]);
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e) => {
+    if (!showDropdown || suggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev > 0 ? prev - 1 : suggestions.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedSuggestionIndex >= 0) {
+          handleSuggestionSelect(suggestions[selectedSuggestionIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowDropdown(false);
+        setSelectedSuggestionIndex(-1);
+        break;
+    }
+  };
 
   // Enhanced NASA SBDB data with more properties for filtering
   const mockAsteroids = [
@@ -232,14 +331,96 @@ const PredefinedAsteroid = () => {
         </div>
 
         <div className="search-section">
-          <div className="search-box">
+          <div className="search-box" style={{ position: 'relative' }}>
             <input
+              ref={searchRef}
               type="text"
-              placeholder="Search asteroids by name, description..."
+              placeholder="Search asteroids by name (e.g., Apophis, Bennu, Icarus)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => searchQuery.length >= 2 && setShowDropdown(true)}
               className="search-input"
+              autoComplete="off"
             />
+            {isLoading && (
+              <div className="search-loading" style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: '14px',
+                color: '#666'
+              }}>
+                Searching...
+              </div>
+            )}
+            {showDropdown && suggestions.length > 0 && (
+              <div 
+                ref={dropdownRef}
+                className="autocomplete-dropdown"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '0',
+                  right: '0',
+                  backgroundColor: 'white',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                  zIndex: 1000,
+                  maxHeight: '300px',
+                  overflowY: 'auto'
+                }}
+              >
+                {suggestions.map((suggestion, index) => (
+                  <div
+                    key={suggestion.pdes || index}
+                    className={`suggestion-item ${index === selectedSuggestionIndex ? 'selected' : ''}`}
+                    onClick={() => handleSuggestionSelect(suggestion)}
+                    style={{
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      borderBottom: index < suggestions.length - 1 ? '1px solid #eee' : 'none',
+                      backgroundColor: index === selectedSuggestionIndex ? '#f0f8ff' : 'transparent',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                  >
+                    <div style={{ fontWeight: 'bold', color: '#333' }}>
+                      {suggestion.name || 'Unknown'}
+                    </div>
+                    {suggestion.pdes && (
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        ID: {suggestion.pdes}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {showDropdown && suggestions.length === 0 && !isLoading && searchQuery.length >= 2 && (
+              <div 
+                ref={dropdownRef}
+                className="autocomplete-dropdown"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '0',
+                  right: '0',
+                  backgroundColor: 'white',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                  zIndex: 1000,
+                  padding: '16px',
+                  textAlign: 'center',
+                  color: '#666'
+                }}
+              >
+                No asteroids found matching "{searchQuery}"
+              </div>
+            )}
           </div>
         </div>
 
@@ -294,37 +475,6 @@ const PredefinedAsteroid = () => {
               <div className="range-labels">
                 <span>0 km</span>
                 <span>1.5 km</span>
-              </div>
-            </div>
-
-            {/* Structure Filter */}
-
-            {/* Angle Range Filter */}
-            <div className="control-item">
-              <label>Angle: <span className="value">{filters.angleRange[0]} - {filters.angleRange[1]}°</span></label>
-              <div className="dual-range-container">
-                <input
-                  type="range"
-                  min="5"
-                  max="90"
-                  step="1"
-                  value={filters.angleRange[0]}
-                  onChange={(e) => handleAngleRangeChange([parseFloat(e.target.value), filters.angleRange[1]])}
-                  className="compact-slider range-min"
-                />
-                <input
-                  type="range"
-                  min="5"
-                  max="90"
-                  step="1"
-                  value={filters.angleRange[1]}
-                  onChange={(e) => handleAngleRangeChange([filters.angleRange[0], parseFloat(e.target.value)])}
-                  className="compact-slider range-max"
-                />
-              </div>
-              <div className="range-labels">
-                <span>5° grazing</span>
-                <span>90° head-on</span>
               </div>
             </div>
 

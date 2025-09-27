@@ -97,17 +97,13 @@ async def asteroid_autocomplete(
         logger.info(f"Searching for asteroids matching: {query}")
         
         # NASA SBDB API endpoint for small body lookup
-        # We'll search for asteroids that match the query
-        sbdb_url = "https://ssd-api.jpl.nasa.gov/sbdb_query.api"
+        # Using the correct endpoint with sstr parameter for wildcard search
+        sbdb_url = "https://ssd-api.jpl.nasa.gov/sbdb.api"
         
         # Parameters for the SBDB query
-        # Search for objects with names containing the query string
+        # Search for objects with names containing the query string using wildcards
         params = {
-            "fields": "spkid,full_name,name,prefix,diameter,orbit_class,pha",
-            "sb-kind": "a",  # asteroids only
-            "sb-group": "neo",  # Near-Earth Objects for relevance
-            "limit": str(limit * 3),  # Get more results to filter
-            "format": "json"
+            "sstr": f"*{query}*"  # Wildcard search for partial name matching
         }
         
         # Make request to NASA SBDB API
@@ -116,50 +112,59 @@ async def asteroid_autocomplete(
         
         data = response.json()
         
-        if not data.get("data"):
-            logger.warning(f"No data returned from SBDB API for query: {query}")
+        # Check if the API returned multiple matches (code "300")
+        if data.get("code") == "300" and data.get("list"):
+            # Multiple matches found - this is what we want for autocomplete
+            asteroid_list = data["list"]
+            
+            # Limit results to the requested number
+            limited_results = asteroid_list[:limit]
+            
+            # Format results for frontend consumption
+            formatted_results = []
+            for item in limited_results:
+                asteroid_info = {
+                    "pdes": item.get("pdes", ""),
+                    "name": item.get("name", ""),
+                    "full_name": item.get("name", ""),  # Using name as full_name for consistency
+                    "display_name": item.get("name", "")  # For dropdown display
+                }
+                formatted_results.append(asteroid_info)
+            
+            logger.info(f"Found {len(formatted_results)} matching asteroids")
+            
+            return {
+                "query": query,
+                "results": formatted_results,
+                "total": len(formatted_results),
+                "message": f"Found {len(formatted_results)} asteroids matching '{query}'"
+            }
+            
+        elif data.get("code") == "200":
+            # Single exact match found
+            asteroid_info = {
+                "pdes": data.get("object", {}).get("pdes", ""),
+                "name": data.get("object", {}).get("fullname", ""),
+                "full_name": data.get("object", {}).get("fullname", ""),
+                "display_name": data.get("object", {}).get("fullname", "")
+            }
+            
+            return {
+                "query": query,
+                "results": [asteroid_info],
+                "total": 1,
+                "message": f"Found exact match for '{query}'"
+            }
+            
+        else:
+            # No matches found or other response
+            logger.warning(f"No asteroids found for query: {query}. API response code: {data.get('code')}")
             return {
                 "query": query,
                 "results": [],
                 "total": 0,
-                "message": "No asteroids found matching the query"
+                "message": f"No asteroids found matching '{query}'"
             }
-        
-        # Filter results based on the query string
-        filtered_results = []
-        query_lower = query.lower()
-        
-        for item in data["data"]:
-            full_name = item[1] if len(item) > 1 else ""
-            name = item[2] if len(item) > 2 else ""
-            
-            # Check if query matches full name or name
-            if (full_name and query_lower in full_name.lower()) or \
-               (name and query_lower in name.lower()):
-                
-                asteroid_info = {
-                    "spkid": item[0] if len(item) > 0 else None,
-                    "full_name": full_name,
-                    "name": name,
-                    "prefix": item[3] if len(item) > 3 else "",
-                    "diameter": item[4] if len(item) > 4 else None,
-                    "orbit_class": item[5] if len(item) > 5 else "",
-                    "is_potentially_hazardous": item[6] if len(item) > 6 else False
-                }
-                
-                filtered_results.append(asteroid_info)
-                
-                if len(filtered_results) >= limit:
-                    break
-        
-        logger.info(f"Found {len(filtered_results)} matching asteroids")
-        
-        return {
-            "query": query,
-            "results": filtered_results,
-            "total": len(filtered_results),
-            "message": f"Found {len(filtered_results)} asteroids matching '{query}'"
-        }
         
     except requests.RequestException as e:
         logger.error(f"Error calling NASA SBDB API: {str(e)}")
