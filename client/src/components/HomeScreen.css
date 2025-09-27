@@ -107,16 +107,30 @@ html {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   padding: 2rem;
   position: relative;
   z-index: 20;
 }
 
-.hero-section {
+/* Title Section - Positioned higher */
+.title-section {
   text-align: center;
   max-width: 800px;
   z-index: 10;
+  margin-top: 5vh; /* Move title section up */
+  flex-grow: 0;
+}
+
+/* Button Section - Positioned in center area */
+.button-section {
+  text-align: center;
+  z-index: 10;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10vh; /* Keep buttons in their current area */
 }
 
 .main-title {
@@ -127,12 +141,10 @@ html {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-
-
 .subtitle {
   font-size: 1.2rem;
   color: var(--text-secondary);
-  margin-bottom: 3rem;
+  margin-bottom: 0; /* Remove bottom margin since it's now separate */
   font-weight: 300;
 }
 
@@ -265,7 +277,7 @@ html {
 .about-text p {
   font-size: 1.2rem;
   line-height: 1.8;
-  color: var(--text-primary);
+  color: whitesmoke;
   margin-bottom: 1.5rem;
   max-width: 700px;
   margin-left: auto;
@@ -293,6 +305,14 @@ html {
 
   .main-title {
     font-size: 2.5rem;
+  }
+
+  .title-section {
+    margin-top: 2vh; /* Reduce top margin on mobile */
+  }
+
+  .button-section {
+    margin-bottom: 5vh; /* Reduce bottom margin on mobile */
   }
 
   .action-buttons {

@@ -33,10 +33,14 @@ const HomeScreen = () => {
 
       {/* Landing Section - Full Viewport */}
       <section id="home" className="landing-section">
-        <div className="hero-section">
+        {/* Title Section - Moved up */}
+        <div className="title-section">
           <h1 className="main-title">Meteor Madness</h1>
           <p className="subtitle">Meteor Simulation System</p>
-          
+        </div>
+        
+        {/* Button Section - Separate positioning */}
+        <div className="button-section">
           <div className="action-buttons">
             <button 
               className="action-btn simulation-btn" 

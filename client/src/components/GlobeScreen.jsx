@@ -30,6 +30,47 @@ const GlobeScreen = () => {
   useEffect(() => {
     // Initialize with quick locations
     setMarkers(quickLocations);
+    
+    // Check for existing coordinates from ScenarioSetup
+    const savedCoords = localStorage.getItem('currentImpactLocation');
+    if (savedCoords) {
+      try {
+        const coordinates = JSON.parse(savedCoords);
+        if (coordinates.lat && coordinates.lng) {
+          const lat = parseFloat(coordinates.lat);
+          const lng = parseFloat(coordinates.lng);
+          
+          // Set the coordinates
+          setSelectedCoordinates({ lat: lat.toFixed(4), lng: lng.toFixed(4) });
+          setManualCoords({ lat: lat.toFixed(4), lng: lng.toFixed(4) });
+          
+          // Add marker for existing coordinates
+          setMarkers(prev => {
+            const filtered = prev.filter(marker => marker.name !== 'Selected Location');
+            return [...filtered, {
+              name: 'Selected Location',
+              lat,
+              lng,
+              color: '#ff0080',
+              size: 1.0,
+              type: 'selected'
+            }];
+          });
+          
+          // Animate globe to the coordinates after a short delay to ensure globe is loaded
+          setTimeout(() => {
+            if (globeRef.current) {
+              globeRef.current.pointOfView({ lat, lng, altitude: 1.5 }, 1000);
+            }
+          }, 500);
+        }
+        
+        // Clear the saved coordinates after loading
+        localStorage.removeItem('currentImpactLocation');
+      } catch (error) {
+        console.error('Error parsing saved coordinates:', error);
+      }
+    }
   }, []);
 
   const handleGlobeClick = (coords, event) => {
@@ -213,6 +254,25 @@ const GlobeScreen = () => {
               </div>
             </div>
 
+            {/* Move selection-confirmation above quick-locations-section */}
+            {selectedCoordinates && (
+              <div className="selection-confirmation">
+                <div className="selected-info">
+                  <h3>Selected Impact Location</h3>
+                  <p>Latitude: {selectedCoordinates.lat}°</p>
+                  <p>Longitude: {selectedCoordinates.lng}°</p>
+                </div>
+                <div className="confirmation-actions">
+                  <button className="clear-btn" onClick={clearSelection}>
+                    Clear Selection
+                  </button>
+                  <button className="confirm-btn" onClick={handleConfirmLocation}>
+                    Confirm Location →
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="quick-locations-section">
               <h3>Quick Locations</h3>
               
@@ -254,24 +314,6 @@ const GlobeScreen = () => {
                 </div>
               </div>
             </div>
-
-            {selectedCoordinates && (
-              <div className="selection-confirmation">
-                <div className="selected-info">
-                  <h3>Selected Impact Location</h3>
-                  <p>Latitude: {selectedCoordinates.lat}°</p>
-                  <p>Longitude: {selectedCoordinates.lng}°</p>
-                </div>
-                <div className="confirmation-actions">
-                  <button className="clear-btn" onClick={clearSelection}>
-                    Clear Selection
-                  </button>
-                  <button className="confirm-btn" onClick={handleConfirmLocation}>
-                    Confirm Location →
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
