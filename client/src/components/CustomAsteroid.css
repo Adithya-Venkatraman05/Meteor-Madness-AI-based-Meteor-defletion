@@ -1,0 +1,353 @@
+/* CustomAsteroid.css */
+.custom-asteroid {
+  min-height: calc(100vh - 80px);
+  padding: 1rem 2rem;
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-container {
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.custom-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  cursor: pointer;
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-3px);
+}
+
+.custom-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(45deg, #ff6b35, #f7931e, #ffcd3c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.custom-form {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+}
+
+.form-section {
+  margin-bottom: 1.5rem;
+}
+
+.form-section.compact {
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  color: #4ecdc4;
+  margin-bottom: 1rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(78, 205, 196, 0.3);
+}
+
+.subsection-title {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1rem;
+  margin-top: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #4ecdc4;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 10px rgba(78, 205, 196, 0.2);
+}
+
+.form-group input.error,
+.form-group select.error {
+  border-color: #ff6b35;
+  background: rgba(255, 107, 53, 0.1);
+}
+
+.error-message {
+  display: block;
+  color: #ff6b35;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.form-group select {
+  cursor: pointer;
+}
+
+.form-group select option {
+  background: #1a1a2e;
+  color: white;
+}
+
+.orbital-elements {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.form-actions {
+  text-align: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.create-btn {
+  background: linear-gradient(45deg, #ff6b35, #f7931e);
+  border: none;
+  color: white;
+  padding: 0.8rem 2.5rem;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.create-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+}
+
+.create-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.create-btn:hover::before {
+  left: 100%;
+}
+
+/* Compact Grid Layout */
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.control-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.control-item label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+.control-item label .value {
+  color: #4ecdc4;
+  font-weight: bold;
+}
+
+/* Compact Line Sliders */
+.compact-slider {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 1px;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.compact-slider::-webkit-slider-track {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 1px;
+}
+
+.compact-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(45deg, #ff6b35, #f7931e);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.4);
+  transition: all 0.3s ease;
+}
+
+.compact-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(255, 107, 53, 0.6);
+}
+
+.compact-slider::-moz-range-track {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 1px;
+  border: none;
+}
+
+.compact-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(45deg, #ff6b35, #f7931e);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.4);
+}
+
+.range-labels {
+  display: flex;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.7rem;
+  margin-top: 0.2rem;
+}
+
+/* Compact Select */
+.compact-select {
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.compact-select:focus {
+  border-color: #4ecdc4;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 8px rgba(78, 205, 196, 0.2);
+}
+
+.compact-select option {
+  background: #1a1a2e;
+  color: white;
+}
+
+
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .custom-asteroid {
+    padding: 0.5rem 1rem;
+  }
+  
+  .custom-form {
+    padding: 1rem;
+  }
+  
+  .controls-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .custom-title {
+    font-size: 1.7rem;
+  }
+  
+  .section-title {
+    font-size: 1.1rem;
+  }
+}
+
+
+
+@media (max-width: 480px) {
+  .custom-asteroid {
+    padding: 1rem;
+  }
+  
+  .custom-form {
+    padding: 1rem;
+  }
+  
+  .custom-title {
+    font-size: 1.8rem;
+  }
+  
+  .create-btn {
+    width: 100%;
+    padding: 0.8rem 2rem;
+    font-size: 0.9rem;
+  }
+  
+  .compact-slider::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .range-labels {
+    font-size: 0.65rem;
+  }
+}
