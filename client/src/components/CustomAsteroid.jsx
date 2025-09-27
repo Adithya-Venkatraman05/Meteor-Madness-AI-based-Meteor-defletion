@@ -77,7 +77,7 @@ const CustomAsteroid = () => {
       };
       // Store custom asteroid data
       localStorage.setItem('selectedAsteroid', JSON.stringify(customAsteroid));
-      navigate('/scenario-setup');
+      navigate('/simulation/scenario-setup');
     }
   };
 
