@@ -1,7 +1,43 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import './ScenarioSetup.css';
 
-const ScenarioSetup = ({ asteroidData, onScenarioComplete, onBack }) => {
+// Mitigation strategies data
+const mitigationStrategies = [
+  {
+    value: 'none',
+    name: 'No Intervention',
+    description: 'Observe natural trajectory',
+    icon: '👁️'
+  },
+  {
+    value: 'kinetic_impactor',
+    name: 'Kinetic Impactor',
+    description: 'High-speed spacecraft collision',
+    icon: '🚀'
+  },
+  {
+    value: 'gravity_tractor',
+    name: 'Gravity Tractor',
+    description: 'Gradual gravitational deflection',
+    icon: '🛰️'
+  },
+  {
+    value: 'nuclear',
+    name: 'Nuclear Deflection',
+    description: 'Nuclear device detonation',
+    icon: '💥'
+  },
+  {
+    value: 'ion_beam',
+    name: 'Ion Beam Shepherd',
+    description: 'Ion beam gradual deflection',
+    icon: '⚡'
+  }
+];
+
+const ScenarioSetup = () => {
+  const navigate = useNavigate();
   const [scenarioData, setScenarioData] = useState({
     impact_location: {
       latitude: '',
@@ -98,10 +134,12 @@ const ScenarioSetup = ({ asteroidData, onScenarioComplete, onBack }) => {
     e.preventDefault();
     if (validateForm()) {
       const completeScenario = {
-        asteroid: asteroidData,
+        asteroid: { name: 'Sample Asteroid' }, // Mock data for now
         scenario: scenarioData
       };
-      onScenarioComplete(completeScenario);
+      console.log('Starting simulation with:', completeScenario);
+      // TODO: Navigate to actual simulation results page
+      alert('Simulation setup complete! (Simulation page to be implemented)');
     }
   };
 
@@ -109,18 +147,14 @@ const ScenarioSetup = ({ asteroidData, onScenarioComplete, onBack }) => {
     <div className="scenario-setup">
       <div className="scenario-container">
         <div className="scenario-header">
-          <button className="back-btn" onClick={onBack}>← Back</button>
+          <Link to="/simulation" className="back-btn">← Back to Mode Selection</Link>
           <h1 className="scenario-title">Scenario Setup</h1>
           <p className="scenario-subtitle">Define impact location and mitigation strategy</p>
           
-          {asteroidData && (
-            <div className="asteroid-summary">
-              <h3>Selected Asteroid: {asteroidData.name || asteroidData.fullName}</h3>
-              {asteroidData.diameter !== undefined && (
-                <p>Diameter: {asteroidData.diameter || asteroidData.diameter_km} km</p>
-              )}
-            </div>
-          )}
+          <div className="asteroid-summary">
+            <h3>Selected Asteroid: Sample Asteroid</h3>
+            <p>Configure your simulation parameters below</p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="scenario-form">

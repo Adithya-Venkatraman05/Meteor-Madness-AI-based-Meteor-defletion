@@ -1,15 +1,17 @@
 import React from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import SpaceScene from './SpaceScene';
 import './HomeScreen.css';
 
 const HomeScreen = () => {
+  const navigate = useNavigate();
+
   const handleSimulationClick = () => {
-    // TODO: Navigate to simulation page
-    console.log('Navigate to Simulation');
+    navigate('/simulation');
   };
 
   const handleCheckDataClick = () => {
-    // TODO: Navigate to data page
+    // TODO: Navigate to data page when data components are ready
     console.log('Navigate to Check Data');
   };
 
@@ -22,8 +24,8 @@ const HomeScreen = () => {
       <nav className="navbar">
         <div className="nav-brand">Meteor Madness</div>
         <div className="nav-links">
-          <a href="#home">Home</a>
-          <a href="#simulation">Simulation</a>
+          <Link to="/">Home</Link>
+          <Link to="/simulation">Simulation</Link>
           <a href="#data">Data</a>
           <a href="#about">About</a>
         </div>

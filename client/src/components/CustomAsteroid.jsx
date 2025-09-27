@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import './CustomAsteroid.css';
 
-const CustomAsteroid = ({ onAsteroidCreate, onBack }) => {
+const CustomAsteroid = () => {
+  const navigate = useNavigate();
   const [asteroidData, setAsteroidData] = useState({
     diameter_km: 0.5,
     type: 'stone asteroid',
@@ -70,10 +72,19 @@ const CustomAsteroid = ({ onAsteroidCreate, onBack }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+    const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      onAsteroidCreate(asteroidData);
+      const customAsteroid = {
+        ...asteroidData,
+        name: `Custom Asteroid ${Date.now()}`,
+        fullName: `Custom ${asteroidData.type} (${asteroidData.diameter_km}km)`,
+        hazardous: asteroidData.diameter_km > 0.14,
+        description: `Custom ${asteroidData.type} with ${asteroidData.diameter_km}km diameter`
+      };
+      // Store custom asteroid data
+      localStorage.setItem('selectedAsteroid', JSON.stringify(customAsteroid));
+      navigate('/simulation/scenario-setup');
     }
   };
 
@@ -83,7 +94,7 @@ const CustomAsteroid = ({ onAsteroidCreate, onBack }) => {
     <div className="custom-asteroid">
       <div className="custom-container">
         <div className="custom-header">
-          <button className="back-btn" onClick={onBack}>← Back</button>
+          <Link to="/simulation" className="back-btn">← Back to Mode Selection</Link>
           <h1 className="custom-title">Create Custom Asteroid</h1>
         </div>
 

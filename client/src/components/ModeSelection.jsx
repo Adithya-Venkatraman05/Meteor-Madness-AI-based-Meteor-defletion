@@ -1,18 +1,24 @@
 import React from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import './ModeSelection.css';
 
-const ModeSelection = ({ onModeSelect }) => {
+const ModeSelection = () => {
+  const navigate = useNavigate();
+
   const handlePredefinedMode = () => {
-    onModeSelect('predefined');
+    navigate('/simulation/predefined');
   };
 
   const handleCustomMode = () => {
-    onModeSelect('custom');
+    navigate('/simulation/custom');
   };
 
   return (
     <div className="mode-selection">
       <div className="mode-container">
+        <div className="navigation-header">
+          <Link to="/" className="back-btn">← Back to Home</Link>
+        </div>
         <h1 className="mode-title">Choose Your Mission</h1>
         <p className="mode-subtitle">Select how you want to explore asteroid deflection</p>
         

@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import './PredefinedAsteroid.css';
 
-const PredefinedAsteroid = ({ onAsteroidSelect, onBack }) => {
+const PredefinedAsteroid = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAsteroid, setSelectedAsteroid] = useState(null);
   const [filters, setFilters] = useState({
@@ -213,7 +215,9 @@ const PredefinedAsteroid = ({ onAsteroidSelect, onBack }) => {
 
   const handleConfirm = () => {
     if (selectedAsteroid) {
-      onAsteroidSelect(selectedAsteroid);
+      // Store selected asteroid data (you might want to use context or state management)
+      localStorage.setItem('selectedAsteroid', JSON.stringify(selectedAsteroid));
+      navigate('/simulation/scenario-setup');
     }
   };
 
@@ -260,7 +264,7 @@ const PredefinedAsteroid = ({ onAsteroidSelect, onBack }) => {
     <div className="predefined-asteroid">
       <div className="predefined-container">
         <div className="predefined-header">
-          <button className="back-btn" onClick={onBack}>← Back</button>
+          <Link to="/simulation" className="back-btn">← Back to Mode Selection</Link>
           <h1 className="predefined-title">Select Predefined Asteroid</h1>
         </div>
 
