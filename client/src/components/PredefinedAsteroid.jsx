@@ -9,6 +9,9 @@ const PredefinedAsteroid = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [selectedAsteroid, setSelectedAsteroid] = useState(null);
+  const [asteroidDetails, setAsteroidDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const searchRef = useRef(null);
   const dropdownRef = useRef(null);
   const [filters, setFilters] = useState({
@@ -72,12 +75,49 @@ const PredefinedAsteroid = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Function to fetch detailed asteroid data
+  const fetchAsteroidDetails = async (asteroidName) => {
+    setLoadingDetails(true);
+    try {
+      const response = await fetch(
+        `http://localhost:8000/asteroids/details?name=${encodeURIComponent(asteroidName)}`
+      );
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          setAsteroidDetails(result.data);
+          return result.data;
+        } else {
+          console.error('No asteroid data found:', result.message);
+          setAsteroidDetails(null);
+          return null;
+        }
+      } else {
+        console.error('Failed to fetch asteroid details:', response.statusText);
+        setAsteroidDetails(null);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching asteroid details:', error);
+      setAsteroidDetails(null);
+      return null;
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   // Handle suggestion selection
-  const handleSuggestionSelect = (suggestion) => {
-    setSearchQuery(suggestion.display_name || suggestion.name || '');
+  const handleSuggestionSelect = async (suggestion) => {
+    const asteroidName = suggestion.name || suggestion.display_name || '';
+    setSearchQuery(asteroidName);
     setShowDropdown(false);
     setSelectedSuggestionIndex(-1);
     setSuggestions([]);
+    setSelectedAsteroid(suggestion);
+    
+    // Fetch detailed data for the selected asteroid
+    await fetchAsteroidDetails(asteroidName);
   };
 
   // Handle keyboard navigation
@@ -501,55 +541,307 @@ const PredefinedAsteroid = () => {
           </div>
         </div>
 
-        <div className="asteroids-grid">
-          {filteredAsteroids.map((asteroid) => (
-            <div
-              key={asteroid.id}
-              className="asteroid-card"
-              onClick={() => handleAsteroidSelect(asteroid)}
-            >
-              <div className="asteroid-header-info">
-                <h3>{asteroid.name}</h3>
-                <div className="badges">
-                  <span className={`hazard-badge ${asteroid.hazardous ? 'hazardous' : 'safe'}`}>
-                    {asteroid.hazardous ? 'PHO' : 'Safe'}
-                  </span>
-                  <span className={`type-badge ${asteroid.type}`}>
-                    {asteroid.type.charAt(0).toUpperCase() + asteroid.type.slice(1)}
-                  </span>
-                </div>
-              </div>
-              
-              <p className="asteroid-full-name">{asteroid.fullName}</p>
-              
-              <div className="asteroid-stats">
-                <div className="stat">
-                  <label>Diameter:</label>
-                  <span>{asteroid.diameter} km</span>
-                </div>
-                <div className="stat">
-                  <label>Type:</label>
-                  <span>{asteroid.type.charAt(0).toUpperCase() + asteroid.type.slice(1)}</span>
-                </div>
-                <div className="stat">
-                  <label>Structure:</label>
-                  <span>{asteroid.structure.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                </div>
-                <div className="stat">
-                  <label>Next Close Approach:</label>
-                  <span>{asteroid.closeApproach}</span>
-                </div>
-              </div>
-              
-              <p className="asteroid-description">{asteroid.description}</p>
-            </div>
-          ))}
-        </div>
+        {/* Detailed Asteroid Data Display */}
+        {loadingDetails && (
+          <div className="loading-details" style={{
+            textAlign: 'center',
+            padding: '40px',
+            fontSize: '18px',
+            color: '#666'
+          }}>
+            Loading asteroid details...
+          </div>
+        )}
 
-        {filteredAsteroids.length === 0 && searchQuery && (
+        {asteroidDetails && (
+          <div className="asteroid-details" style={{
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #e9ecef',
+            borderRadius: '12px',
+            padding: '24px',
+            marginTop: '20px'
+          }}>
+            {/* Header Information */}
+            <div className="asteroid-header" style={{
+              borderBottom: '2px solid #dee2e6',
+              paddingBottom: '16px',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{ margin: '0 0 8px 0', color: '#2c3e50' }}>
+                {asteroidDetails.object?.fullname || asteroidDetails.object?.shortname || 'Unknown Asteroid'}
+              </h2>
+              <div className="asteroid-badges" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {asteroidDetails.object?.neo && (
+                  <span style={{
+                    backgroundColor: '#17a2b8',
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 'bold'
+                  }}>NEO</span>
+                )}
+                {asteroidDetails.object?.pha && (
+                  <span style={{
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 'bold'
+                  }}>PHA</span>
+                )}
+                {asteroidDetails.object?.orbit_class && (
+                  <span style={{
+                    backgroundColor: '#6c757d',
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 'bold'
+                  }}>{asteroidDetails.object.orbit_class.name}</span>
+                )}
+              </div>
+              <p style={{ margin: '8px 0 0 0', color: '#6c757d' }}>
+                ID: {asteroidDetails.object?.des || asteroidDetails.object?.spkid || 'N/A'}
+              </p>
+            </div>
+
+            {/* Physical Parameters */}
+            {asteroidDetails.phys_par && asteroidDetails.phys_par.length > 0 && (
+              <div className="physical-parameters" style={{ marginBottom: '24px' }}>
+                <h3 style={{ color: '#495057', marginBottom: '16px' }}>Physical Parameters</h3>
+                <div className="params-grid" style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gap: '12px'
+                }}>
+                  {asteroidDetails.phys_par.map((param, index) => (
+                    <div key={index} className="param-item" style={{
+                      backgroundColor: 'white',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid #e9ecef'
+                    }}>
+                      <div style={{ fontWeight: 'bold', color: '#2c3e50', marginBottom: '4px' }}>
+                        {param.title || param.name}
+                      </div>
+                      <div style={{ fontSize: '16px', color: '#495057', marginBottom: '4px' }}>
+                        {param.value} {param.units && <span style={{ color: '#6c757d' }}>({param.units})</span>}
+                      </div>
+                      {param.sigma && (
+                        <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                          σ: {param.sigma}
+                        </div>
+                      )}
+                      {param.desc && (
+                        <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
+                          {param.desc}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Orbital Elements */}
+            {asteroidDetails.orbit && (
+              <div className="orbital-elements" style={{ marginBottom: '24px' }}>
+                <h3 style={{ color: '#495057', marginBottom: '16px' }}>Orbital Elements</h3>
+                <div className="orbit-info" style={{
+                  backgroundColor: 'white',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  border: '1px solid #e9ecef',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+                    <div><strong>Epoch:</strong> {asteroidDetails.orbit.epoch}</div>
+                    <div><strong>MOID:</strong> {asteroidDetails.orbit.moid} AU</div>
+                    <div><strong>Condition Code:</strong> {asteroidDetails.orbit.condition_code}</div>
+                    <div><strong>Observations Used:</strong> {asteroidDetails.orbit.n_obs_used}</div>
+                    <div><strong>Data Arc:</strong> {asteroidDetails.orbit.data_arc} days</div>
+                    <div><strong>RMS:</strong> {asteroidDetails.orbit.rms}</div>
+                  </div>
+                </div>
+                
+                {asteroidDetails.orbit.elements && (
+                  <div className="elements-grid" style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                    gap: '12px'
+                  }}>
+                    {asteroidDetails.orbit.elements.map((element, index) => (
+                      <div key={index} className="element-item" style={{
+                        backgroundColor: 'white',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: '1px solid #e9ecef'
+                      }}>
+                        <div style={{ fontWeight: 'bold', color: '#2c3e50', marginBottom: '4px' }}>
+                          {element.title} ({element.label})
+                        </div>
+                        <div style={{ fontSize: '16px', color: '#495057', marginBottom: '4px' }}>
+                          {element.value} {element.units && <span style={{ color: '#6c757d' }}>({element.units})</span>}
+                        </div>
+                        {element.sigma && (
+                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                            σ: {element.sigma}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Data Quality Information */}
+            {asteroidDetails.orbit && (
+              <div className="data-quality" style={{ marginBottom: '24px' }}>
+                <h3 style={{ color: '#495057', marginBottom: '16px' }}>Data Quality & Provenance</h3>
+                <div className="quality-grid" style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '12px'
+                }}>
+                  <div className="quality-item" style={{
+                    backgroundColor: 'white',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <div style={{ fontWeight: 'bold', color: '#2c3e50' }}>First Observation</div>
+                    <div style={{ color: '#495057' }}>{asteroidDetails.orbit.first_obs || 'N/A'}</div>
+                  </div>
+                  <div className="quality-item" style={{
+                    backgroundColor: 'white',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <div style={{ fontWeight: 'bold', color: '#2c3e50' }}>Last Observation</div>
+                    <div style={{ color: '#495057' }}>{asteroidDetails.orbit.last_obs || 'N/A'}</div>
+                  </div>
+                  <div className="quality-item" style={{
+                    backgroundColor: 'white',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <div style={{ fontWeight: 'bold', color: '#2c3e50' }}>Solution Date</div>
+                    <div style={{ color: '#495057' }}>{asteroidDetails.orbit.soln_date || 'N/A'}</div>
+                  </div>
+                  <div className="quality-item" style={{
+                    backgroundColor: 'white',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <div style={{ fontWeight: 'bold', color: '#2c3e50' }}>Producer</div>
+                    <div style={{ color: '#495057' }}>{asteroidDetails.orbit.producer || 'N/A'}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Continue to Scenario Setup Button */}
+            <div className="action-section" style={{
+              textAlign: 'center',
+              paddingTop: '16px',
+              borderTop: '1px solid #dee2e6'
+            }}>
+              <button
+                onClick={() => {
+                  // Store the detailed asteroid data for scenario setup
+                  localStorage.setItem('selectedAsteroidDetails', JSON.stringify(asteroidDetails));
+                  navigate('/scenario-setup');
+                }}
+                style={{
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#0056b3'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
+              >
+                Continue to Scenario Setup
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Show mock asteroids grid if no asteroid is selected */}
+        {!selectedAsteroid && !loadingDetails && (
+          <div className="asteroids-grid">
+            {filteredAsteroids.map((asteroid) => (
+              <div
+                key={asteroid.id}
+                className="asteroid-card"
+                onClick={() => handleAsteroidSelect(asteroid)}
+              >
+                <div className="asteroid-header-info">
+                  <h3>{asteroid.name}</h3>
+                  <div className="badges">
+                    <span className={`hazard-badge ${asteroid.hazardous ? 'hazardous' : 'safe'}`}>
+                      {asteroid.hazardous ? 'PHO' : 'Safe'}
+                    </span>
+                    <span className={`type-badge ${asteroid.type}`}>
+                      {asteroid.type.charAt(0).toUpperCase() + asteroid.type.slice(1)}
+                    </span>
+                  </div>
+                </div>
+                
+                <p className="asteroid-full-name">{asteroid.fullName}</p>
+                
+                <div className="asteroid-stats">
+                  <div className="stat">
+                    <label>Diameter:</label>
+                    <span>{asteroid.diameter} km</span>
+                  </div>
+                  <div className="stat">
+                    <label>Type:</label>
+                    <span>{asteroid.type.charAt(0).toUpperCase() + asteroid.type.slice(1)}</span>
+                  </div>
+                  <div className="stat">
+                    <label>Structure:</label>
+                    <span>{asteroid.structure.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                  </div>
+                  <div className="stat">
+                    <label>Next Close Approach:</label>
+                    <span>{asteroid.closeApproach}</span>
+                  </div>
+                </div>
+                
+                <p className="asteroid-description">{asteroid.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!selectedAsteroid && !loadingDetails && filteredAsteroids.length === 0 && searchQuery && (
           <div className="no-results">
             <p>No asteroids found matching "{searchQuery}"</p>
             <p>Try searching for: Apophis, Bennu, Icarus, Toutatis, or Eros</p>
+          </div>
+        )}
+
+        {!selectedAsteroid && !loadingDetails && !searchQuery && (
+          <div className="search-instructions" style={{
+            textAlign: 'center',
+            padding: '40px',
+            color: '#666'
+          }}>
+            <h3>Search for an Asteroid</h3>
+            <p>Type the name of an asteroid in the search box above to get detailed information from NASA's database.</p>
+            <p>Try searching for: <strong>Apophis</strong>, <strong>Bennu</strong>, <strong>Icarus</strong>, <strong>Toutatis</strong>, or <strong>Eros</strong></p>
           </div>
         )}
       </div>

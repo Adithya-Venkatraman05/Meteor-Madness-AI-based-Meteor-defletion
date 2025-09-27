@@ -225,6 +225,100 @@ async def asteroid_autocomplete_simple(
         "message": f"Found {len(matches)} known asteroids matching '{query}'"
     }
 
+# Detailed asteroid data endpoint using NASA SBDB API
+@app.get("/asteroids/details")
+async def asteroid_details(
+    name: str = Query(..., description="Asteroid name to get detailed information for")
+):
+    """
+    Get detailed asteroid information from NASA's SBDB API including physical parameters
+    
+    Args:
+        name: The name of the asteroid to look up (e.g., "1566 Icarus (1949 MA)")
+    
+    Returns:
+        Detailed asteroid data including orbital elements, physical parameters, and data quality
+    """
+    try:
+        logger.info(f"Fetching detailed data for asteroid: {name}")
+        
+        # Extract just the asteroid name from the full name format
+        # e.g., "1566 Icarus (1949 MA)" -> "Icarus"
+        def extract_asteroid_name(full_name):
+            # Remove leading/trailing whitespace
+            full_name = full_name.strip()
+            
+            # Use regex to find the pattern: number followed by space, then capture the name before parentheses
+            pattern = r'^\d+\s+([^(]+)'
+            match = re.match(pattern, full_name)
+            
+            if match:
+                # Extract the name part and remove trailing whitespace
+                asteroid_name = match.group(1).strip()
+                logger.info(f"Extracted asteroid name: '{asteroid_name}' from '{full_name}'")
+                return asteroid_name
+            else:
+                # If no number prefix found, try to extract name before parentheses
+                if '(' in full_name:
+                    asteroid_name = full_name.split('(')[0].strip()
+                    logger.info(f"Extracted asteroid name (fallback): '{asteroid_name}' from '{full_name}'")
+                    return asteroid_name
+                else:
+                    # If no pattern matches, use the original name
+                    logger.info(f"Using original name: '{full_name}'")
+                    return full_name
+        
+        # Extract the clean asteroid name for the API call
+        clean_name = extract_asteroid_name(name)
+        
+        # NASA SBDB API endpoint for detailed asteroid data
+        sbdb_url = "https://ssd-api.jpl.nasa.gov/sbdb.api"
+        
+        # Parameters for the SBDB query
+        params = {
+            "sstr": clean_name,  # Search string (cleaned asteroid name)
+            "phys-par": "1"  # Include physical parameters
+        }
+        
+        # Make request to NASA SBDB API
+        response = requests.get(sbdb_url, params=params, timeout=15)
+        response.raise_for_status()
+        
+        data = response.json()
+        print(data)
+        # Check if we got valid data
+        if data.get("object"):
+            logger.info(f"Successfully retrieved detailed data for: {name} (searched as: {clean_name})")
+            return {
+                "success": True,
+                "asteroid_name": name,
+                "search_name": clean_name,
+                "data": data,
+                "message": f"Successfully retrieved detailed data for {name}"
+            }
+        else:
+            logger.warning(f"No detailed data found for asteroid: {name} (searched as: {clean_name})")
+            return {
+                "success": False,
+                "asteroid_name": name,
+                "search_name": clean_name,
+                "data": None,
+                "message": f"No detailed data found for asteroid '{name}' (searched as '{clean_name}')"
+            }
+        
+    except requests.RequestException as e:
+        logger.error(f"Error calling NASA SBDB API for details: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Unable to fetch detailed asteroid data: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error fetching asteroid details: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
+
 if __name__ == "__main__":
     # Run the server
     uvicorn.run(
