@@ -213,6 +213,25 @@ const GlobeScreen = () => {
               </div>
             </div>
 
+            {/* Move selection-confirmation above quick-locations-section */}
+            {selectedCoordinates && (
+              <div className="selection-confirmation">
+                <div className="selected-info">
+                  <h3>Selected Impact Location</h3>
+                  <p>Latitude: {selectedCoordinates.lat}°</p>
+                  <p>Longitude: {selectedCoordinates.lng}°</p>
+                </div>
+                <div className="confirmation-actions">
+                  <button className="clear-btn" onClick={clearSelection}>
+                    Clear Selection
+                  </button>
+                  <button className="confirm-btn" onClick={handleConfirmLocation}>
+                    Confirm Location →
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="quick-locations-section">
               <h3>Quick Locations</h3>
               
@@ -254,24 +273,6 @@ const GlobeScreen = () => {
                 </div>
               </div>
             </div>
-
-            {selectedCoordinates && (
-              <div className="selection-confirmation">
-                <div className="selected-info">
-                  <h3>Selected Impact Location</h3>
-                  <p>Latitude: {selectedCoordinates.lat}°</p>
-                  <p>Longitude: {selectedCoordinates.lng}°</p>
-                </div>
-                <div className="confirmation-actions">
-                  <button className="clear-btn" onClick={clearSelection}>
-                    Clear Selection
-                  </button>
-                  <button className="confirm-btn" onClick={handleConfirmLocation}>
-                    Confirm Location →
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
