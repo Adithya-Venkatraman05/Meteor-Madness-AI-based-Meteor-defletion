@@ -29,7 +29,7 @@ const HomeScreen = () => {
       <section id="home" className="landing-section">
         <div className="hero-section">
           <h1 className="main-title">Meteor Madness</h1>
-          <p className="subtitle">AI-Based Meteor Deflection System</p>
+          <p className="subtitle">Meteor Simulation System</p>
           
           <div className="action-buttons">
             <button 
