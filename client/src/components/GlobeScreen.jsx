@@ -335,31 +335,7 @@ const GlobeScreen = () => {
   }, [circleData]);
   
   // Test function to create a simple visible polygon
-  const createTestPolygon = () => {
-    if (selectedCoordinates) {
-      const testPolygon = {
-        type: 'Feature',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [[
-            [parseFloat(selectedCoordinates.lng) - 1, parseFloat(selectedCoordinates.lat) - 1],
-            [parseFloat(selectedCoordinates.lng) + 1, parseFloat(selectedCoordinates.lat) - 1],
-            [parseFloat(selectedCoordinates.lng) + 1, parseFloat(selectedCoordinates.lat) + 1],
-            [parseFloat(selectedCoordinates.lng) - 1, parseFloat(selectedCoordinates.lat) + 1],
-            [parseFloat(selectedCoordinates.lng) - 1, parseFloat(selectedCoordinates.lat) - 1]
-          ]]
-        },
-        properties: {
-          name: 'Test Square',
-          color: '#ff0000',
-          radius: 100,
-          effectType: 'test'
-        }
-      };
-      console.log('🧪 Setting test polygon:', testPolygon);
-      setCircleData([testPolygon]);
-    }
-  };
+  
   
   // Note: Physics analysis is now loaded from ScenarioSetup via localStorage
   // If user wants to re-analyze, they can do so manually
@@ -756,9 +732,7 @@ const GlobeScreen = () => {
           </Link>
           <h1 className="globe-title">Impact Analysis Visualization</h1>
           <p className="globe-subtitle">Select location and view real-time physics analysis</p>
-          <button onClick={createTestPolygon} style={{marginLeft: '10px', padding: '5px 10px', background: '#ff6b35', color: 'white', border: 'none', borderRadius: '4px'}}>
-            🧪 Test Polygon
-          </button>
+          
         </div>
 
         <div className="globe-content">
@@ -1409,7 +1383,7 @@ const GlobeScreen = () => {
         {/* API Parameters Display */}
         {selectedCoordinates && (
           <div className="api-parameters-display">
-            <h3>🖥️ Analysis Parameters {physicsResponse ? '(From ScenarioSetup Analysis)' : ''}</h3>
+            <h3> Analysis Parameters {physicsResponse ? '(From ScenarioSetup Analysis)' : ''}</h3>
             <div className="parameters-grid">
               <div className="parameter-group">
                 <h4>🌍 Location</h4>

@@ -11,8 +11,7 @@ const HomeScreen = () => {
   };
 
   const handleCheckDataClick = () => {
-    // TODO: Navigate to data page when data components are ready
-    console.log('Navigate to Check Data');
+    navigate('/simulation/predefined');
   };
 
   return (

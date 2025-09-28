@@ -77,13 +77,7 @@
   font-size: 2.8rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  background: linear-gradient(45deg, #4ecdc4, #44a08d, #6c5ce7, #4ecdc4);
-  background-size: 300% 300%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: gradientShift 4s ease-in-out infinite;
-  text-shadow: 0 0 30px rgba(78, 205, 196, 0.3);
+  color: #b4b4b4ff;
 }
 
 @keyframes gradientShift {
@@ -241,7 +235,7 @@
 .coordinate-input-section h3,
 .radius-input-section h3,
 .quick-locations-section h3 {
-  color: #4ecdc4;
+  color: #b4b4b4ff;
   margin-bottom: 1rem;
   font-size: 1.2rem;
   font-weight: 600;
@@ -364,7 +358,7 @@
 }
 
 .compact-result-section h4 {
-  color: #4ecdc4;
+  color: #b4b4b4ff;
   margin: 0 0 0.8rem 0;
   font-size: 1rem;
   font-weight: 600;
@@ -392,7 +386,7 @@
 }
 
 .metric-item .value {
-  color: #4ecdc4;
+  color: #b4b4b4ff;
   font-size: 0.85rem;
   font-weight: 600;
   text-align: right;
@@ -451,7 +445,7 @@
 }
 
 .zone-stats .stat {
-  color: #4ecdc4;
+  color: #b4b4b4ff;
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -681,10 +675,9 @@
 }
 
 .radius-value {
-  color: #4ecdc4;
+  color: #b4b4b4ff;
   font-weight: 600;
   font-size: 1.1rem;
-  text-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
 }
 
 .radius-input {
@@ -870,7 +863,7 @@
 }
 
 .selected-info h3 {
-  color: #4ecdc4;
+  color: #b4b4b4ff;
   margin-bottom: 0.5rem;
   font-size: 1.1rem;
 }

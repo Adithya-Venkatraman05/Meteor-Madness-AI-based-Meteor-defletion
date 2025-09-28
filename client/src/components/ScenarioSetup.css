@@ -50,10 +50,7 @@
   font-size: 2.5rem;
   font-weight: bold;
   margin-bottom: 1rem;
-  background: linear-gradient(45deg, #4ecdc4, #44a08d, #ffcd3c);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #b4b4b4ff;
 }
 
 .scenario-subtitle {
@@ -97,7 +94,7 @@
 }
 
 .asteroid-summary h3 {
-  color: var(--primary-color);
+  color: #b4b4b4ff;
   margin-bottom: 0.5rem;
   font-weight: 600;
 }
@@ -134,10 +131,10 @@
 
 .section-title {
   font-size: 1.5rem;
-  color: var(--primary-color);
+  color: #b4b4b4ff;
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid rgba(78, 205, 196, 0.3);
+  border-bottom: 2px solid rgba(180, 180, 180, 0.3);
   font-weight: 600;
 }
 
@@ -155,7 +152,7 @@
 
 .quick-locations h4,
 .manual-coordinates h4 {
-  color: var(--text-color);
+  color: #b4b4b4ff;
   margin-bottom: 1rem;
   font-size: 1.1rem;
   font-weight: 600;
@@ -277,7 +274,7 @@
 }
 
 .map-selection h4 {
-  color: var(--text-color);
+  color: #b4b4b4ff;
   margin-bottom: 1rem;
   font-size: 1rem;
   font-weight: 600;
@@ -395,7 +392,7 @@
 }
 
 .strategy-card h4 {
-  color: var(--text-color);
+  color: #b4b4b4ff;
   margin-bottom: 0.75rem;
   font-size: 1.1rem;
   font-weight: 600;
@@ -668,7 +665,7 @@
 .essential-parameters h4,
 .optional-parameters h4,
 .orbital-elements h4 {
-  color: var(--primary-color);
+  color: #b4b4b4ff;
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 16px;
@@ -677,19 +674,10 @@
   gap: 8px;
 }
 
-.essential-parameters h4::before {
-  content: "⭐";
-  font-size: 18px;
-}
-
-.optional-parameters h4::before {
-  content: "🔧";
-  font-size: 18px;
-}
-
+.essential-parameters h4::before,
+.optional-parameters h4::before,
 .orbital-elements h4::before {
-  content: "🌌";
-  font-size: 18px;
+  display: none;
 }
 
 .parameter-card {
@@ -834,7 +822,7 @@
 }
 
 .orbital-elements h4 {
-  color: var(--primary-color);
+  color: #b4b4b4ff;
   margin-bottom: 1rem;
   font-size: 1.1rem;
   font-weight: 600;
@@ -868,7 +856,7 @@
 }
 
 .summary-card h4 {
-  color: var(--primary-color);
+  color: #b4b4b4ff;
   margin-bottom: 0.8rem;
   font-size: 1rem;
   font-weight: 600;
@@ -935,7 +923,7 @@
 
 .modal-header h2 {
   margin: 0;
-  color: var(--primary-color);
+  color: #b4b4b4ff;
   font-size: 1.5rem;
   font-weight: 600;
 }
@@ -985,7 +973,7 @@
 }
 
 .analysis-section h3 {
-  color: var(--primary-color);
+  color: #b4b4b4ff;
   margin-bottom: 1rem;
   font-size: 1.2rem;
   font-weight: 600;

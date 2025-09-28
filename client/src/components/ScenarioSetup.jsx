@@ -8,25 +8,25 @@ const mitigationStrategies = [
     value: 'none',
     name: 'No Intervention',
     description: 'Observe natural trajectory',
-    icon: '👁️'
+    icon: ''
   },
   {
     value: 'kinetic_impactor',
     name: 'Kinetic Impactor',
     description: 'High-speed spacecraft collision',
-    icon: '🚀'
+    icon: ''
   },
   {
     value: 'gravity_tractor',
     name: 'Gravity Tractor',
     description: 'Gradual gravitational deflection',
-    icon: '🛰️'
+    icon: ''
   },
   {
     value: 'nuclear',
     name: 'Nuclear Deflection',
     description: 'Nuclear device detonation',
-    icon: '💥'
+    icon: ''
   },
   {
     value: 'ion_beam',
@@ -558,57 +558,9 @@ const ScenarioSetup = () => {
     }
   };
 
-  // Test function for debugging
-  const testAPI = async () => {
-    console.log('🧪 Testing API connectivity...');
-    try {
-      const response = await fetch('http://localhost:8001/health');
-      const data = await response.json();
-      console.log('✅ Server is running:', data);
-      alert(`Server Status: ${data.status}`);
-    } catch (error) {
-      console.error('❌ Server connection failed:', error);
-      alert(`Server Error: ${error.message}`);
-    }
-  };
+  
 
-  // Test modal functionality
-  const testModal = () => {
-    console.log('🧪 Testing modal...');
-    const mockResponse = {
-      success: true,
-      impact_analysis: {
-        energy_calculations: {
-          tnt_equivalent: 15.5,
-          kinetic_energy_joules: 6.5e15
-        },
-        impact_mechanics: {
-          impact_type: 'airburst',
-          airburst_altitude_km: 8.5,
-          crater_diameter_m: 0,
-          seismic_magnitude: 7.2
-        }
-      },
-      casualty_analysis: {
-        estimated_casualties: {
-          fatalities: 125000
-        }
-      },
-      analysis_summary: {
-        max_impact_radius_km: 45.2
-      },
-      asteroid_parameters: {
-        calculated_properties: {
-          approach_velocity_ms: 18500,
-          impact_angle_degrees: 45
-        }
-      }
-    };
-    
-    setPhysicsResponse(mockResponse);
-    setShowModal(true);
-    console.log('🎉 Mock modal opened');
-  };
+  
 
   // Direct analysis function (bypasses form submission)
   const handleDirectAnalysis = async () => {
@@ -670,10 +622,10 @@ const ScenarioSetup = () => {
               <div className="asteroid-info-compact">
                 <div className="data-status-inline">
                   <span><strong>NASA SBDB:</strong> {Object.keys(asteroidParameters).length} params</span>
-                  {selectedAsteroid.success === false && <span style={{color: '#ff6b6b'}}>⚠️ Limited data</span>}
+                  {selectedAsteroid.success === false && <span style={{color: '#ff6b6b'}}>Limited data</span>}
                 </div>
                 {parameterErrors.general && (
-                  <div className="parameter-error">⚠️ {parameterErrors.general}</div>
+                  <div className="parameter-error">{parameterErrors.general}</div>
                 )}
               </div>
             ) : (
@@ -687,7 +639,7 @@ const ScenarioSetup = () => {
         <form onSubmit={handleSubmit} className="scenario-form compact">
           {/* Impact Location */}
           <div className="form-section compact">
-            <h3 className="section-title">📍 Impact Location</h3>
+            <h3 className="section-title">Impact Location</h3>
             
             <div className="location-selection">
               <div className="quick-locations">
@@ -751,7 +703,7 @@ const ScenarioSetup = () => {
           {/* Asteroid Parameters from SBDB */}
           {selectedAsteroid && (
             <div className="form-section compact">
-              <h3 className="section-title">🪨 Asteroid Parameters</h3>
+              <h3 className="section-title"> Asteroid Parameters</h3>
               
               <div className="essential-parameters">
                 <h4>Essential Physical Properties</h4>
@@ -769,7 +721,7 @@ const ScenarioSetup = () => {
                       required
                     />
                     <span className="parameter-status">
-                      {asteroidParameters.diameter ? '✓ From NASA SBDB' : '⚠️ Required - Please enter'}
+                      {asteroidParameters.diameter ? 'From NASA SBDB' : 'Required - Please enter'}
                     </span>
                   </div>
 
@@ -786,7 +738,7 @@ const ScenarioSetup = () => {
                       <option value="ICY">Icy</option>
                     </select>
                     <span className="parameter-status">
-                      {asteroidParameters.geometric_albedo ? '✓ Estimated from albedo' : '🔧 Default selection'}
+                      {asteroidParameters.geometric_albedo ? 'Estimated from albedo' : 'Default selection'}
                     </span>
                   </div>
 
@@ -803,7 +755,7 @@ const ScenarioSetup = () => {
                       className={asteroidParameters.density ? 'prefilled' : 'empty'}
                     />
                     <span className="parameter-status">
-                      {asteroidParameters.density ? '🔧 Based on composition' : '⚪ Will auto-calculate'}
+                      {asteroidParameters.density ? 'Based on composition' : 'Will auto-calculate'}
                     </span>
                   </div>
 
@@ -819,7 +771,7 @@ const ScenarioSetup = () => {
                       className={asteroidParameters.mass ? 'prefilled' : 'empty'}
                     />
                     <span className="parameter-status">
-                      {asteroidParameters.mass ? '🔧 Calculated' : '⚪ Will auto-calculate'}
+                      {asteroidParameters.mass ? 'Calculated' : 'Will auto-calculate'}
                     </span>
                   </div>
                 </div>
@@ -952,7 +904,7 @@ const ScenarioSetup = () => {
             </div>
           )}          {/* Impact Parameters */}
           <div className="form-section compact">
-            <h3 className="section-title">💥 Impact Parameters</h3>
+            <h3 className="section-title">Impact Parameters</h3>
             
             <div className="impact-parameters">
               {/* Velocity Parameter */}
@@ -1005,7 +957,7 @@ const ScenarioSetup = () => {
 
           {/* Simulation Summary */}
           <div className="form-section compact">
-            <h3 className="section-title">📊 Summary</h3>
+            <h3 className="section-title"> Summary</h3>
             <div className="simulation-summary">
               <div className="summary-grid">
                 <div className="summary-card">
@@ -1019,7 +971,7 @@ const ScenarioSetup = () => {
                   <h4>Impact Location</h4>
                   <p><strong>Latitude:</strong> {scenarioData.impact_location.latitude || 'Not set'}</p>
                   <p><strong>Longitude:</strong> {scenarioData.impact_location.longitude || 'Not set'}</p>
-                  <p><strong>Status:</strong> {scenarioData.impact_location.latitude && scenarioData.impact_location.longitude ? '✓ Ready' : '⚠️ Incomplete'}</p>
+                  <p><strong>Status:</strong> {scenarioData.impact_location.latitude && scenarioData.impact_location.longitude ? 'Ready' : 'Incomplete'}</p>
                 </div>
                 
                 <div className="summary-card">
@@ -1033,22 +985,8 @@ const ScenarioSetup = () => {
           </div>
 
           <div className="form-actions">
-            <button 
-              type="button" 
-              onClick={testAPI}
-              className="btn-secondary"
-              style={{marginRight: '0.5rem'}}
-            >
-              🧪 Test Server
-            </button>
-            <button 
-              type="button" 
-              onClick={testModal}
-              className="btn-secondary"
-              style={{marginRight: '1rem'}}
-            >
-              🎭 Test Modal
-            </button>
+           
+            
             <button 
               type="button"
               onClick={handleDirectAnalysis}
@@ -1064,7 +1002,7 @@ const ScenarioSetup = () => {
             </button>
             {analysisError && (
               <div className="analysis-error">
-                ⚠️ {analysisError}
+                {analysisError}
               </div>
             )}
           </div>
@@ -1075,7 +1013,7 @@ const ScenarioSetup = () => {
           <div className="modal-overlay" onClick={() => setShowModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>🌍 Impact Analysis Results</h2>
+                <h2> Impact Analysis Results</h2>
                 <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
               </div>
               
@@ -1093,10 +1031,10 @@ const ScenarioSetup = () => {
                   <>
                 {/* Analysis Summary */}
                 <div className="analysis-section">
-                  <h3>📊 Analysis Summary</h3>
+                  <h3> Analysis Summary</h3>
                   <div className="summary-cards">
                     <div className="summary-card energy">
-                      <h4>💥 Impact Energy</h4>
+                      <h4>Impact Energy</h4>
                       <p className="value">{(physicsResponse.impact_analysis?.energy_calculations?.tnt_equivalent_megatons || 0).toFixed(2)} MT</p>
                       <p className="label">TNT Equivalent</p>
                     </div>
@@ -1137,7 +1075,7 @@ const ScenarioSetup = () => {
                 {/* Impact Location */}
                 {physicsResponse.impact_location?.coordinates && (
                   <div className="analysis-section">
-                    <h3>📍 Impact Location</h3>
+                    <h3> Impact Location</h3>
                     <div className="location-info">
                       <p><strong>Coordinates:</strong> {(physicsResponse.impact_location?.coordinates?.latitude || 0).toFixed(4)}°, {(physicsResponse.impact_location?.coordinates?.longitude || 0).toFixed(4)}°</p>
                       <p><strong>Region:</strong> {physicsResponse.impact_location?.coordinates?.region_type}</p>
