@@ -412,12 +412,6 @@ const GlobeScreen = () => {
         damageZones.forEach((zone, index) => {
           let radiusKm = zone.radius_km || 0;
           
-          // Cap extremely large radii for better visibility
-          // if (radiusKm > 500) {
-          //   console.log(`⚠️ Zone ${index + 1} radius too large (${radiusKm}km), capping to 500km`);
-          //   radiusKm = 500;
-          // }
-          
           console.log(`📊 Processing zone ${index + 1}:`, { 
             description: zone.description, 
             effect_type: zone.effect_type, 

@@ -70,6 +70,32 @@
   margin-bottom: 1rem;
 }
 
+.asteroid-summary.compact {
+  padding: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.asteroid-summary.compact h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.asteroid-info-compact {
+  margin-top: 0.5rem;
+}
+
+.data-status-inline {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.data-status-inline span {
+  color: var(--muted-color);
+}
+
 .asteroid-summary h3 {
   color: var(--primary-color);
   margin-bottom: 0.5rem;
@@ -94,8 +120,16 @@
   backdrop-filter: blur(10px);
 }
 
+.scenario-form.compact {
+  padding: 1.5rem;
+}
+
 .form-section {
   margin-bottom: 3rem;
+}
+
+.form-section.compact {
+  margin-bottom: 2rem;
 }
 
 .section-title {
@@ -105,6 +139,12 @@
   padding-bottom: 0.5rem;
   border-bottom: 2px solid rgba(78, 205, 196, 0.3);
   font-weight: 600;
+}
+
+.form-section.compact .section-title {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.3rem;
 }
 
 /* Location Selection */
@@ -121,11 +161,22 @@
   font-weight: 600;
 }
 
+.form-section.compact .quick-locations h4,
+.form-section.compact .manual-coordinates h4 {
+  font-size: 1rem;
+  margin-bottom: 0.8rem;
+}
+
 .location-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.form-section.compact .location-grid {
+  gap: 0.8rem;
+  margin-bottom: 1rem;
 }
 
 .location-btn {
@@ -138,6 +189,11 @@
   transition: all 0.3s ease;
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+.form-section.compact .location-btn {
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
 }
 
 .location-btn:hover {
@@ -156,6 +212,63 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+.coordinate-inputs-inline {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.coordinate-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.coordinate-input-group label {
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  min-width: 35px;
+}
+
+.coordinate-input-group input {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  background: var(--input-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-color);
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.coordinate-input-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.coordinate-input-group input:focus {
+  border-color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 8px rgba(78, 205, 196, 0.2);
+}
+
+.coordinate-input-group input.error {
+  border-color: var(--error-color);
+  background: rgba(255, 107, 53, 0.1);
+}
+
+.coordinate-errors {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .map-selection {
@@ -340,6 +453,16 @@
     grid-template-columns: 1fr;
   }
   
+  .coordinate-inputs-inline {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+  }
+  
+  .coordinate-input-group {
+    min-width: auto;
+  }
+  
   .location-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
@@ -364,6 +487,20 @@
   
   .scenario-form {
     padding: 1rem;
+  }
+  
+  .scenario-form.compact {
+    padding: 0.8rem;
+  }
+  
+  .coordinate-input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+  }
+  
+  .coordinate-input-group label {
+    font-size: 0.8rem;
   }
   
   .location-grid {

@@ -655,27 +655,22 @@ const ScenarioSetup = () => {
           <h1 className="scenario-title">Scenario Setup</h1>
           <p className="scenario-subtitle">Define impact location and mitigation strategy</p>
           
-          <div className="asteroid-summary">
-            <h3>Selected Asteroid: {
+          <div className="asteroid-summary compact">
+            <h3>🪨 {
               selectedAsteroid?.object?.fullname || 
               selectedAsteroid?.object?.full_name ||
               selectedAsteroid?.data?.object?.fullname || 
               selectedAsteroid?.data?.object?.full_name ||
               selectedAsteroid?.asteroid_name ||
-              (selectedAsteroid ? 'Unknown Asteroid' : 'Loading...')
+              (selectedAsteroid ? 'Unknown Asteroid' : 'No Selection')
             }</h3>
             {loadingParameters ? (
-              <p>🔄 Analyzing asteroid parameters from NASA SBDB...</p>
+              <p>🔄 Loading parameters...</p>
             ) : selectedAsteroid ? (
-              <div className="asteroid-info">
-                <p>Configure your simulation parameters below. Parameters extracted from NASA SBDB are pre-filled but can be edited.</p>
-                <div className="data-status">
-                  <p><strong>Data Source:</strong> NASA SBDB</p>
-                  <p><strong>Parameters Found:</strong> {Object.keys(asteroidParameters).length}</p>
-                  <p><strong>Search Name:</strong> {selectedAsteroid.search_name || selectedAsteroid?.object?.des || 'N/A'}</p>
-                  {selectedAsteroid.success === false && (
-                    <p style={{color: '#ff6b6b'}}>⚠️ Limited data available for this asteroid</p>
-                  )}
+              <div className="asteroid-info-compact">
+                <div className="data-status-inline">
+                  <span><strong>NASA SBDB:</strong> {Object.keys(asteroidParameters).length} params</span>
+                  {selectedAsteroid.success === false && <span style={{color: '#ff6b6b'}}>⚠️ Limited data</span>}
                 </div>
                 {parameterErrors.general && (
                   <div className="parameter-error">⚠️ {parameterErrors.general}</div>
@@ -684,25 +679,15 @@ const ScenarioSetup = () => {
             ) : (
               <div className="no-asteroid">
                 <p>No asteroid selected. <Link to="/simulation/predefined">Select an asteroid</Link> to continue.</p>
-                <button 
-                  onClick={() => {
-                    // Clear any stale data and force reload
-                    localStorage.removeItem('selectedAsteroidDetails');
-                    window.location.href = '/simulation/predefined';
-                  }}
-                  className="reload-btn"
-                >
-                  🔄 Select New Asteroid
-                </button>
               </div>
             )}
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="scenario-form">
+        <form onSubmit={handleSubmit} className="scenario-form compact">
           {/* Impact Location */}
-          <div className="form-section">
-            <h3 className="section-title">Impact Location</h3>
+          <div className="form-section compact">
+            <h3 className="section-title">📍 Impact Location</h3>
             
             <div className="location-selection">
               <div className="quick-locations">
@@ -723,47 +708,50 @@ const ScenarioSetup = () => {
 
               <div className="manual-coordinates">
                 <h4>Or enter coordinates manually:</h4>
-                <div className="coordinate-inputs">
-                  <div className="form-group">
-                    <label htmlFor="latitude">Latitude (-90 to 90)</label>
+                <div className="coordinate-inputs-inline">
+                  <div className="coordinate-input-group">
+                    <label htmlFor="latitude">Lat:</label>
                     <input
                       id="latitude"
                       type="number"
                       step="0.0001"
                       min="-90"
                       max="90"
-                      placeholder="e.g., 40.7128"
+                      placeholder="40.7128"
                       value={scenarioData.impact_location.latitude}
                       onChange={(e) => handleInputChange('latitude', e.target.value)}
                       className={errors.latitude ? 'error' : ''}
                     />
-                    {errors.latitude && <span className="error-message">{errors.latitude}</span>}
                   </div>
-
-                  <div className="form-group">
-                    <label htmlFor="longitude">Longitude (-180 to 180)</label>
+                  <div className="coordinate-input-group">
+                    <label htmlFor="longitude">Lng:</label>
                     <input
                       id="longitude"
                       type="number"
                       step="0.0001"
                       min="-180"
                       max="180"
-                      placeholder="e.g., -74.0060"
+                      placeholder="-74.0060"
                       value={scenarioData.impact_location.longitude}
                       onChange={(e) => handleInputChange('longitude', e.target.value)}
                       className={errors.longitude ? 'error' : ''}
                     />
-                    {errors.longitude && <span className="error-message">{errors.longitude}</span>}
                   </div>
                 </div>
+                {(errors.latitude || errors.longitude) && (
+                  <div className="coordinate-errors">
+                    {errors.latitude && <span className="error-message">{errors.latitude}</span>}
+                    {errors.longitude && <span className="error-message">{errors.longitude}</span>}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Asteroid Parameters from SBDB */}
           {selectedAsteroid && (
-            <div className="form-section">
-              <h3 className="section-title">Asteroid Parameters</h3>
+            <div className="form-section compact">
+              <h3 className="section-title">🪨 Asteroid Parameters</h3>
               
               <div className="essential-parameters">
                 <h4>Essential Physical Properties</h4>
@@ -963,8 +951,8 @@ const ScenarioSetup = () => {
               </div>
             </div>
           )}          {/* Impact Parameters */}
-          <div className="form-section">
-            <h3 className="section-title">Impact Parameters</h3>
+          <div className="form-section compact">
+            <h3 className="section-title">💥 Impact Parameters</h3>
             
             <div className="impact-parameters">
               {/* Velocity Parameter */}
@@ -1016,8 +1004,8 @@ const ScenarioSetup = () => {
           </div>
 
           {/* Simulation Summary */}
-          <div className="form-section">
-            <h3 className="section-title">Simulation Summary</h3>
+          <div className="form-section compact">
+            <h3 className="section-title">📊 Summary</h3>
             <div className="simulation-summary">
               <div className="summary-grid">
                 <div className="summary-card">
@@ -1109,7 +1097,7 @@ const ScenarioSetup = () => {
                   <div className="summary-cards">
                     <div className="summary-card energy">
                       <h4>💥 Impact Energy</h4>
-                      <p className="value">{(physicsResponse.impact_analysis?.energy_calculations?.tnt_equivalent || 0).toFixed(2)} MT</p>
+                      <p className="value">{(physicsResponse.impact_analysis?.energy_calculations?.tnt_equivalent_megatons || 0).toFixed(2)} MT</p>
                       <p className="label">TNT Equivalent</p>
                     </div>
                     <div className="summary-card damage">
