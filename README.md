@@ -6,7 +6,7 @@
 
 ### 🎯 Core Mission
 
-With over 33,000 known Near-Earth Objects and new discoveries occurring daily, asteroid impact remains one of humanity's most significant existential challenges. Current systems provide fragmented analysis—astronomical observation without impact consequences, or impact models without deflection feasibility. **Meteor Madness** provides a unified platform that seamlessly transitions from threat detection to mission planning.
+With over 39,000 known Near-Earth Objects and new discoveries occurring daily, asteroid impact remains one of humanity's most significant existential challenges. Current systems provide fragmented analysis—astronomical observation without impact consequences, or impact models without deflection feasibility. **Meteor Madness** provides a unified platform that seamlessly transitions from threat detection to mission planning.
 
 ## 🏗️ System Architecture
 
