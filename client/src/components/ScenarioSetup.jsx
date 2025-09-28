@@ -55,6 +55,12 @@ const ScenarioSetup = () => {
   const [asteroidParameters, setAsteroidParameters] = useState({});
   const [loadingParameters, setLoadingParameters] = useState(false);
   const [parameterErrors, setParameterErrors] = useState({});
+  
+  // Modal and API response state
+  const [showModal, setShowModal] = useState(false);
+  const [physicsResponse, setPhysicsResponse] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState(null);
 
   // Check for coordinates from globe screen on component load
   useEffect(() => {
@@ -429,27 +435,216 @@ const ScenarioSetup = () => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      // Prepare complete simulation data including asteroid parameters
-      const simulationData = {
-        ...scenarioData,
-        asteroid_parameters: asteroidParameters,
-        selected_asteroid: selectedAsteroid
-      };
+  // Function to call physics engine API
+  const callPhysicsAPI = async () => {
+    console.log('🚀 Starting physics API call...');
+    console.log('Current asteroid parameters:', asteroidParameters);
+    console.log('Current scenario data:', scenarioData);
+    
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+    
+    try {
+      // Build API parameters from asteroid and scenario data
+      const apiParams = new URLSearchParams();
       
-      // Save complete simulation data
-      localStorage.setItem('simulationData', JSON.stringify(simulationData));
+      // Required parameters
+      if (asteroidParameters.diameter) {
+        apiParams.append('diameter', asteroidParameters.diameter.toString());
+        console.log('✅ Diameter added:', asteroidParameters.diameter);
+      } else {
+        console.error('❌ No diameter found in asteroid parameters');
+        throw new Error('Asteroid diameter is required for physics analysis');
+      }
       
-      // Save current coordinates for globe screen
-      const coordinates = {
-        lat: parseFloat(scenarioData.impact_location.latitude),
-        lng: parseFloat(scenarioData.impact_location.longitude)
-      };
-      localStorage.setItem('currentImpactLocation', JSON.stringify(coordinates));
-      navigate('/simulation/globe');
+      // Optional parameters from asteroid data
+      if (asteroidParameters.mass) apiParams.append('mass', asteroidParameters.mass.toString());
+      if (asteroidParameters.density) apiParams.append('density', asteroidParameters.density.toString());
+      if (asteroidParameters.composition) apiParams.append('composition', asteroidParameters.composition);
+      if (asteroidParameters.absolute_magnitude) apiParams.append('absolute_magnitude', asteroidParameters.absolute_magnitude.toString());
+      if (asteroidParameters.geometric_albedo) apiParams.append('geometric_albedo', asteroidParameters.geometric_albedo.toString());
+      if (asteroidParameters.rotation_period) apiParams.append('rotation_period', asteroidParameters.rotation_period.toString());
+      
+      // Orbital elements
+      if (asteroidParameters.eccentricity !== undefined) apiParams.append('eccentricity', asteroidParameters.eccentricity.toString());
+      if (asteroidParameters.semi_major_axis) apiParams.append('semi_major_axis', asteroidParameters.semi_major_axis.toString());
+      if (asteroidParameters.perihelion_distance) apiParams.append('perihelion_distance', asteroidParameters.perihelion_distance.toString());
+      if (asteroidParameters.aphelion_distance) apiParams.append('aphelion_distance', asteroidParameters.aphelion_distance.toString());
+      if (asteroidParameters.inclination !== undefined) apiParams.append('inclination', asteroidParameters.inclination.toString());
+      if (asteroidParameters.longitude_ascending_node) apiParams.append('longitude_ascending_node', asteroidParameters.longitude_ascending_node.toString());
+      if (asteroidParameters.argument_perihelion) apiParams.append('argument_perihelion', asteroidParameters.argument_perihelion.toString());
+      if (asteroidParameters.mean_anomaly) apiParams.append('mean_anomaly', asteroidParameters.mean_anomaly.toString());
+      if (asteroidParameters.orbital_period) apiParams.append('orbital_period', asteroidParameters.orbital_period.toString());
+      if (asteroidParameters.mean_motion) apiParams.append('mean_motion', asteroidParameters.mean_motion.toString());
+      if (asteroidParameters.moid !== undefined) apiParams.append('moid', asteroidParameters.moid.toString());
+      
+      // Impact parameters from scenario
+      if (scenarioData.velocity_kms) {
+        apiParams.append('velocity', (scenarioData.velocity_kms * 1000).toString()); // Convert km/s to m/s
+      }
+      if (scenarioData.angle_degrees) {
+        apiParams.append('angle', scenarioData.angle_degrees.toString());
+      }
+      
+      // Impact location coordinates
+      if (scenarioData.impact_location.latitude !== '' && scenarioData.impact_location.latitude !== null) {
+        apiParams.append('impact_latitude', scenarioData.impact_location.latitude.toString());
+        console.log('✅ Impact latitude added:', scenarioData.impact_location.latitude);
+      }
+      if (scenarioData.impact_location.longitude !== '' && scenarioData.impact_location.longitude !== null) {
+        apiParams.append('impact_longitude', scenarioData.impact_location.longitude.toString());
+        console.log('✅ Impact longitude added:', scenarioData.impact_location.longitude);
+      }
+      
+      // Default population density
+      apiParams.append('population_density', '100');
+      
+      const apiUrl = `http://localhost:8001/physics/impact-analysis?${apiParams}`;
+      console.log('🌐 API URL:', apiUrl);
+      console.log('📊 API Parameters:', Object.fromEntries(apiParams));
+      console.log('📍 Impact Location being sent:', {
+        latitude: scenarioData.impact_location.latitude,
+        longitude: scenarioData.impact_location.longitude,
+        included_in_params: apiParams.has('impact_latitude') && apiParams.has('impact_longitude')
+      });
+      
+      // Test server connectivity first
+      console.log('🔍 Testing server connectivity...');
+      const healthResponse = await fetch('http://localhost:8001/health');
+      console.log('❤️ Health check status:', healthResponse.status);
+      
+      // Make API call
+      console.log('📡 Making physics API call...');
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        let errorMessage = `API call failed with status ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+          console.error('❌ API Error:', errorData);
+        } catch (e) {
+          console.error('❌ Could not parse error response');
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Physics API response:', data);
+      
+      setPhysicsResponse(data);
+      setShowModal(true);
+      console.log('🎉 Modal should be visible now');
+      
+    } catch (error) {
+      console.error('💥 Physics API call failed:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        asteroidParameters,
+        scenarioData
+      });
+      setAnalysisError(error.message || 'Failed to analyze asteroid impact');
+    } finally {
+      setIsAnalyzing(false);
+      console.log('🏁 API call completed');
     }
+  };
+
+  // Test function for debugging
+  const testAPI = async () => {
+    console.log('🧪 Testing API connectivity...');
+    try {
+      const response = await fetch('http://localhost:8001/health');
+      const data = await response.json();
+      console.log('✅ Server is running:', data);
+      alert(`Server Status: ${data.status}`);
+    } catch (error) {
+      console.error('❌ Server connection failed:', error);
+      alert(`Server Error: ${error.message}`);
+    }
+  };
+
+  // Test modal functionality
+  const testModal = () => {
+    console.log('🧪 Testing modal...');
+    const mockResponse = {
+      success: true,
+      impact_analysis: {
+        energy_calculations: {
+          tnt_equivalent: 15.5,
+          kinetic_energy_joules: 6.5e15
+        },
+        impact_mechanics: {
+          impact_type: 'airburst',
+          airburst_altitude_km: 8.5,
+          crater_diameter_m: 0,
+          seismic_magnitude: 7.2
+        }
+      },
+      casualty_analysis: {
+        estimated_casualties: {
+          fatalities: 125000
+        }
+      },
+      analysis_summary: {
+        max_impact_radius_km: 45.2
+      },
+      asteroid_parameters: {
+        calculated_properties: {
+          approach_velocity_ms: 18500,
+          impact_angle_degrees: 45
+        }
+      }
+    };
+    
+    setPhysicsResponse(mockResponse);
+    setShowModal(true);
+    console.log('🎉 Mock modal opened');
+  };
+
+  // Direct analysis function (bypasses form submission)
+  const handleDirectAnalysis = async () => {
+    console.log('🎯 Direct analysis clicked');
+    console.log('Current state:', {
+      latitude: scenarioData.impact_location.latitude,
+      longitude: scenarioData.impact_location.longitude,
+      diameter: asteroidParameters.diameter,
+      asteroidParametersCount: Object.keys(asteroidParameters).length
+    });
+    
+    // Clear any previous analysis errors
+    setAnalysisError(null);
+    
+    // Check if we have minimum required data for physics analysis
+    if (!asteroidParameters.diameter) {
+      console.error('❌ No diameter found in asteroid parameters');
+      setAnalysisError('Asteroid diameter is required for impact analysis');
+      return;
+    }
+    
+    if (!scenarioData.impact_location.latitude || !scenarioData.impact_location.longitude) {
+      console.error('❌ Missing impact location');
+      setAnalysisError('Impact location (latitude and longitude) is required');
+      return;
+    }
+    
+    console.log('🚀 All checks passed, calling physics API...');
+    // Call physics API for analysis
+    await callPhysicsAPI();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log('📝 Form submitted - redirecting to direct analysis');
+    await handleDirectAnalysis();
   };
 
   return (
@@ -851,17 +1046,225 @@ const ScenarioSetup = () => {
 
           <div className="form-actions">
             <button 
-              type="submit" 
-              className="start-simulation-btn"
-              disabled={!scenarioData.impact_location.latitude || !scenarioData.impact_location.longitude}
+              type="button" 
+              onClick={testAPI}
+              className="btn-secondary"
+              style={{marginRight: '0.5rem'}}
             >
-              {!scenarioData.impact_location.latitude || !scenarioData.impact_location.longitude 
-                ? 'Set Impact Location First' 
-                : 'Start Simulation →'
+              🧪 Test Server
+            </button>
+            <button 
+              type="button" 
+              onClick={testModal}
+              className="btn-secondary"
+              style={{marginRight: '1rem'}}
+            >
+              🎭 Test Modal
+            </button>
+            <button 
+              type="button"
+              onClick={handleDirectAnalysis}
+              className="start-simulation-btn"
+              disabled={!scenarioData.impact_location.latitude || !scenarioData.impact_location.longitude || isAnalyzing}
+            >
+              {isAnalyzing 
+                ? '🔄 Analyzing Impact...' 
+                : !scenarioData.impact_location.latitude || !scenarioData.impact_location.longitude 
+                  ? 'Set Impact Location First' 
+                  : 'Analyze Impact →'
               }
             </button>
+            {analysisError && (
+              <div className="analysis-error">
+                ⚠️ {analysisError}
+              </div>
+            )}
           </div>
         </form>
+
+        {/* Physics Analysis Results Modal */}
+        {showModal && (
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>🌍 Impact Analysis Results</h2>
+                <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+              </div>
+              
+              <div className="modal-body">
+                {!physicsResponse ? (
+                  <div className="loading-state">
+                    <p>🔄 Loading analysis results...</p>
+                    {analysisError && (
+                      <div className="error-state">
+                        <p>❌ Error: {analysisError}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                {/* Analysis Summary */}
+                <div className="analysis-section">
+                  <h3>📊 Analysis Summary</h3>
+                  <div className="summary-cards">
+                    <div className="summary-card energy">
+                      <h4>💥 Impact Energy</h4>
+                      <p className="value">{(physicsResponse.impact_analysis?.energy_calculations?.tnt_equivalent || 0).toFixed(2)} MT</p>
+                      <p className="label">TNT Equivalent</p>
+                    </div>
+                    <div className="summary-card damage">
+                      <h4>📍 Impact Type</h4>
+                      <p className="value">{physicsResponse.impact_analysis?.impact_mechanics?.impact_type || 'Unknown'}</p>
+                      <p className="label">{physicsResponse.impact_analysis?.impact_mechanics?.airburst_altitude_km ? 
+                        `Airburst at ${(physicsResponse.impact_analysis?.impact_mechanics?.airburst_altitude_km || 0).toFixed(1)} km` : 
+                        'Surface Impact'}</p>
+                    </div>
+                    <div className="summary-card casualties">
+                      <h4>👥 Estimated Casualties</h4>
+                      <p className="value">{physicsResponse.casualty_analysis?.estimated_casualties?.fatalities?.toLocaleString() || '0'}</p>
+                      <p className="label">Fatalities</p>
+                    </div>
+                    <div className="summary-card radius">
+                      <h4>🎯 Max Damage Radius</h4>
+                      <p className="value">{(physicsResponse.analysis_summary?.max_impact_radius_km || 0).toFixed(1)} km</p>
+                      <p className="label">Total Destruction</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Orbital Classification */}
+                {physicsResponse.orbital_analysis?.orbital_classification && (
+                  <div className="analysis-section">
+                    <h3>🛰️ Orbital Analysis</h3>
+                    <div className="orbital-info">
+                      <p><strong>Classification:</strong> {physicsResponse.orbital_analysis.orbital_classification}</p>
+                      <p><strong>Earth Threat:</strong> {physicsResponse.orbital_analysis.earth_threat_assessment?.close_approach_risk || 'Unknown'}</p>
+                      {physicsResponse.orbital_analysis.earth_threat_assessment?.potentially_hazardous && (
+                        <p className="warning">⚠️ Potentially Hazardous Asteroid</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Impact Location */}
+                {physicsResponse.impact_location?.coordinates && (
+                  <div className="analysis-section">
+                    <h3>📍 Impact Location</h3>
+                    <div className="location-info">
+                      <p><strong>Coordinates:</strong> {(physicsResponse.impact_location?.coordinates?.latitude || 0).toFixed(4)}°, {(physicsResponse.impact_location?.coordinates?.longitude || 0).toFixed(4)}°</p>
+                      <p><strong>Region:</strong> {physicsResponse.impact_location?.coordinates?.region_type}</p>
+                      {physicsResponse.impact_location?.coordinates?.nearest_city && (
+                        <p><strong>Nearest City:</strong> {physicsResponse.impact_location?.coordinates?.nearest_city} ({(physicsResponse.impact_location?.coordinates?.distance_to_city_km || 0).toFixed(1)} km away)</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Damage Zones */}
+                {physicsResponse.damage_analysis?.impact_radii_by_severity && (
+                  <div className="analysis-section">
+                    <h3>💥 Damage Zones</h3>
+                    <div className="damage-zones">
+                      {physicsResponse.damage_analysis?.impact_radii_by_severity?.map((zone, index) => (
+                        <div key={index} className={`damage-zone ${zone.effect_type}`}>
+                          <div className="zone-header">
+                            <span className="zone-icon" style={{color: zone.color}}>{zone.effect_type === 'thermal' ? '🔥' : '💨'}</span>
+                            <strong>{zone.description}</strong>
+                          </div>
+                          <div className="zone-details">
+                            <span>Radius: {(zone?.radius_km || 0).toFixed(1)} km</span>
+                            <span>Area: {(zone?.area_km2 || 0).toFixed(1)} km²</span>
+                            <span>Severity: {zone.severity_level || 0}/10</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Physical Impact Details */}
+                <div className="analysis-section">
+                  <h3>🔬 Physical Impact Details</h3>
+                  <div className="impact-details">
+                    <div className="detail-row">
+                      <span>Kinetic Energy:</span>
+                      <span>{physicsResponse.impact_analysis?.energy_calculations?.kinetic_energy_joules?.toExponential(2)} J</span>
+                    </div>
+                    {physicsResponse.impact_analysis?.impact_mechanics?.crater_diameter_m && (
+                      <div className="detail-row">
+                        <span>Crater Diameter:</span>
+                        <span>{((physicsResponse.impact_analysis?.impact_mechanics?.crater_diameter_m || 0) / 1000).toFixed(1)} km</span>
+                      </div>
+                    )}
+                    {physicsResponse.impact_analysis?.impact_mechanics?.seismic_magnitude && (
+                      <div className="detail-row">
+                        <span>Seismic Magnitude:</span>
+                        <span>{(physicsResponse.impact_analysis?.impact_mechanics?.seismic_magnitude || 0).toFixed(1)}</span>
+                      </div>
+                    )}
+                    <div className="detail-row">
+                      <span>Approach Velocity:</span>
+                      <span>{((physicsResponse.asteroid_parameters?.calculated_properties?.approach_velocity_ms || 0) / 1000).toFixed(1)} km/s</span>
+                    </div>
+                    <div className="detail-row">
+                      <span>Impact Angle:</span>
+                      <span>{physicsResponse.asteroid_parameters?.calculated_properties?.impact_angle_degrees}°</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Deflection Analysis */}
+                {physicsResponse.deflection_analysis && (
+                  <div className="analysis-section">
+                    <h3>🚀 Deflection Recommendations</h3>
+                    <div className="deflection-info">
+                      <p><strong>Deflection Feasibility:</strong> {physicsResponse.deflection_analysis.deflection_feasible ? '✅ Possible' : '❌ Not Feasible'}</p>
+                      {physicsResponse.deflection_analysis.recommended_strategies?.length > 0 && (
+                        <div>
+                          <p><strong>Recommended Strategies:</strong></p>
+                          <ul>
+                            {physicsResponse.deflection_analysis?.recommended_strategies?.map((strategy, index) => (
+                              <li key={index}>{strategy}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                  </>
+                )}
+              </div>
+              
+              <div className="modal-footer">
+                <button className="btn-secondary" onClick={() => setShowModal(false)}>
+                  Close Analysis
+                </button>
+                <button 
+                  className="btn-primary" 
+                  onClick={() => {
+                    // Save data and navigate to globe view
+                    const simulationData = {
+                      ...scenarioData,
+                      asteroid_parameters: asteroidParameters,
+                      selected_asteroid: selectedAsteroid,
+                      physics_analysis: physicsResponse
+                    };
+                    localStorage.setItem('simulationData', JSON.stringify(simulationData));
+                    const coordinates = {
+                      lat: parseFloat(scenarioData.impact_location.latitude),
+                      lng: parseFloat(scenarioData.impact_location.longitude)
+                    };
+                    localStorage.setItem('currentImpactLocation', JSON.stringify(coordinates));
+                    navigate('/simulation/globe');
+                  }}
+                >
+                  View on Globe →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

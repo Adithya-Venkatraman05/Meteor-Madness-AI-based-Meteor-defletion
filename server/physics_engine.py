@@ -96,9 +96,10 @@ class AsteroidProperties:
             volume = (4/3) * math.pi * (self.diameter/2)**3
             self.mass = self.density * volume if self.density else 0
         
-        # Set default velocity and angle if not provided
+        # Set default velocity and angle ONLY if they are truly not provided
+        # Do not override explicitly provided values (including 0)
         if self.velocity is None:
-            self.velocity = 20000  # Default m/s
+            self.velocity = 20000  # Default m/s (20 km/s)
         if self.angle is None:
             self.angle = 45  # Default degrees
 
@@ -520,8 +521,70 @@ class PhysicsEngine:
         
         return casualties
     
+    def enhance_impact_coordinates(self, coordinates: ImpactCoordinates) -> ImpactCoordinates:
+        """
+        Enhance provided coordinates with region type, nearest city, and local time
+        
+        Args:
+            coordinates: Basic coordinates with lat/lng
+            
+        Returns:
+            Enhanced coordinates with additional information
+        """
+        # Determine impact region type based on coordinates
+        lat, lng = coordinates.latitude, coordinates.longitude
+        
+        # Simple ocean/land determination (rough approximation)
+        # Major ocean regions
+        if (-60 <= lat <= 60 and -180 <= lng <= -30) or \
+           (-60 <= lat <= 60 and 30 <= lng <= 180) or \
+           (lat < -60) or (lat > 60 and abs(lng) > 30):
+            coordinates.impact_region = "Ocean"
+        else:
+            coordinates.impact_region = "Land"
+        
+        # Determine nearest major city (simplified)
+        major_cities = [
+            ("New York", 40.7128, -74.0060),
+            ("London", 51.5074, -0.1278),
+            ("Tokyo", 35.6762, 139.6503),
+            ("Sydney", -33.8688, 151.2093),
+            ("Cairo", 30.0444, 31.2357),
+            ("Rio de Janeiro", -22.9068, -43.1729),
+            ("Mumbai", 19.0760, 72.8777),
+            ("Los Angeles", 34.0522, -118.2437),
+            ("Beijing", 39.9042, 116.4074),
+            ("Moscow", 55.7558, 37.6176)
+        ]
+        
+        closest_city = ""
+        min_distance = float('inf')
+        
+        for city_name, city_lat, city_lng in major_cities:
+            # Calculate approximate distance using Haversine formula
+            dlat = math.radians(lat - city_lat)
+            dlng = math.radians(lng - city_lng)
+            a = math.sin(dlat/2)**2 + math.cos(math.radians(city_lat)) * \
+                math.cos(math.radians(lat)) * math.sin(dlng/2)**2
+            c = 2 * math.asin(math.sqrt(a))
+            distance = 6371 * c  # Earth radius in km
+            
+            if distance < min_distance:
+                min_distance = distance
+                closest_city = city_name
+        
+        coordinates.nearest_city = closest_city
+        coordinates.distance_to_city = min_distance
+        
+        # Simple time zone approximation (very rough)
+        utc_offset = int(lng / 15)  # Rough estimate
+        coordinates.local_time = f"UTC{utc_offset:+d}:00"
+        
+        return coordinates
+    
     def analyze_impact(self, asteroid: AsteroidProperties,
-                      population_density: float = 100) -> ImpactResults:
+                      population_density: float = 100,
+                      provided_coordinates: Optional[ImpactCoordinates] = None) -> ImpactResults:
         """
         Perform enhanced complete impact analysis with orbital mechanics
         
@@ -546,11 +609,19 @@ class PhysicsEngine:
         else:
             impact_type = ImpactType.SURFACE
         
-        # Calculate impact coordinates
-        impact_coords = None
+        # Use provided coordinates or calculate from orbital elements
+        impact_coords = provided_coordinates
         orbital_classification = ""
-        if enhanced_asteroid.orbital_elements:
+        
+        if provided_coordinates:
+            # Enhance provided coordinates with additional information
+            impact_coords = self.enhance_impact_coordinates(provided_coordinates)
+        elif enhanced_asteroid.orbital_elements:
+            # Calculate coordinates from orbital mechanics
             impact_coords = self.calculate_impact_coordinates(enhanced_asteroid.orbital_elements)
+            orbital_classification = self.classify_orbital_type(enhanced_asteroid.orbital_elements)
+        
+        if enhanced_asteroid.orbital_elements and not orbital_classification:
             orbital_classification = self.classify_orbital_type(enhanced_asteroid.orbital_elements)
         
         # Calculate crater

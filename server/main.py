@@ -355,6 +355,8 @@ async def analyze_asteroid_impact(
     # Impact analysis parameters
     velocity: Optional[float] = Query(None, gt=0, description="Impact velocity in m/s (calculated from orbital mechanics if not provided)"),
     angle: Optional[float] = Query(None, ge=0, le=90, description="Impact angle in degrees (calculated from orbital geometry if not provided)"),
+    impact_latitude: Optional[float] = Query(None, ge=-90, le=90, description="Impact latitude in degrees (optional, for specific impact location)"),
+    impact_longitude: Optional[float] = Query(None, ge=-180, le=180, description="Impact longitude in degrees (optional, for specific impact location)"),
     population_density: float = Query(100, ge=0, description="Population density in people/km² (default: 100)"),
     
     # Deflection analysis parameters
@@ -376,11 +378,12 @@ async def analyze_asteroid_impact(
     
     Impact Analysis Parameters:
     - velocity, angle (calculated from orbital mechanics if not provided)
+    - impact_latitude, impact_longitude (specific impact location)
     - population_density, deflection parameters
     
     Returns:
     - Complete enhanced impact analysis with:
-      * Impact coordinates (latitude/longitude)
+      * Impact coordinates (uses provided lat/lng or calculates from orbital mechanics)
       * Airburst altitude determination
       * Crater diameter predictions  
       * Seismic magnitude estimation
@@ -389,7 +392,15 @@ async def analyze_asteroid_impact(
       * Orbital classification and approach geometry
     """
     try:
-        logger.info(f"Enhanced asteroid impact analysis: diameter={diameter}m, composition={composition}")
+        logger.info(f"🚀 Enhanced asteroid impact analysis starting...")
+        logger.info(f"📊 Parameters received: diameter={diameter}m, composition={composition}")
+        logger.info(f"📡 Physical params: mass={mass}, density={density}")
+        logger.info(f"🌟 NASA SBDB: abs_mag={absolute_magnitude}, albedo={geometric_albedo}")
+        logger.info(f"🔄 Rotation: period={rotation_period}, colors=B-V:{color_b_v}, U-B:{color_u_b}")
+        logger.info(f"🛰️ Orbital: ecc={eccentricity}, sma={semi_major_axis}, inc={inclination}")
+        logger.info(f"💥 Impact: velocity={velocity}m/s, angle={angle}°, pop_density={population_density}")
+        logger.info(f"📍 Coordinates: lat={impact_latitude}°, lng={impact_longitude}°")
+        logger.info(f"🎯 Deflection: distance={deflection_distance}, time={warning_time}, energy={available_energy}")
         
         # Import the enhanced classes
         from physics_engine import OrbitalElements, ImpactCoordinates
@@ -443,10 +454,32 @@ async def analyze_asteroid_impact(
             orbital_elements=orbital_elements
         )
         
-        logger.info(f"Created enhanced asteroid with orbital data: {orbital_elements is not None}")
+        logger.info(f"🌍 Created enhanced asteroid object:")
+        logger.info(f"  - Diameter: {asteroid.diameter}m")
+        logger.info(f"  - Mass: {asteroid.mass}kg")
+        logger.info(f"  - Density: {asteroid.density}kg/m³")
+        logger.info(f"  - Composition: {asteroid.composition}")
+        logger.info(f"  - Velocity: {asteroid.velocity}m/s")
+        logger.info(f"  - Angle: {asteroid.angle}°")
+        logger.info(f"  - Orbital data present: {orbital_elements is not None}")
+        logger.info(f"  - NASA SBDB data: abs_mag={asteroid.absolute_magnitude}, albedo={asteroid.geometric_albedo}")
+        
+        # Create impact coordinates if provided
+        provided_coordinates = None
+        if impact_latitude is not None and impact_longitude is not None:
+            logger.info(f"📍 Using provided impact coordinates: ({impact_latitude}, {impact_longitude})")
+            provided_coordinates = ImpactCoordinates(
+                latitude=impact_latitude,
+                longitude=impact_longitude,
+                impact_region="Unknown",  # Will be calculated by physics engine
+                nearest_city="",  # Will be calculated by physics engine
+                distance_to_city=0.0,  # Will be calculated by physics engine
+                local_time=""  # Will be calculated by physics engine
+            )
         
         # Perform enhanced impact analysis with orbital mechanics
-        results = physics_engine.analyze_impact(asteroid, population_density)
+        logger.info(f"🔬 Starting physics analysis with population density: {population_density}")
+        results = physics_engine.analyze_impact(asteroid, population_density, provided_coordinates)
         
         logger.info(f"Enhanced analysis complete: orbital_class={results.orbital_classification}, coords={results.impact_coordinates is not None}")
         
