@@ -558,57 +558,8 @@ const ScenarioSetup = () => {
     }
   };
 
-  // Test function for debugging
-  const testAPI = async () => {
-    console.log('🧪 Testing API connectivity...');
-    try {
-      const response = await fetch('http://localhost:8001/health');
-      const data = await response.json();
-      console.log('✅ Server is running:', data);
-      alert(`Server Status: ${data.status}`);
-    } catch (error) {
-      console.error('❌ Server connection failed:', error);
-      alert(`Server Error: ${error.message}`);
-    }
-  };
 
-  // Test modal functionality
-  const testModal = () => {
-    console.log('🧪 Testing modal...');
-    const mockResponse = {
-      success: true,
-      impact_analysis: {
-        energy_calculations: {
-          tnt_equivalent: 15.5,
-          kinetic_energy_joules: 6.5e15
-        },
-        impact_mechanics: {
-          impact_type: 'airburst',
-          airburst_altitude_km: 8.5,
-          crater_diameter_m: 0,
-          seismic_magnitude: 7.2
-        }
-      },
-      casualty_analysis: {
-        estimated_casualties: {
-          fatalities: 125000
-        }
-      },
-      analysis_summary: {
-        max_impact_radius_km: 45.2
-      },
-      asteroid_parameters: {
-        calculated_properties: {
-          approach_velocity_ms: 18500,
-          impact_angle_degrees: 45
-        }
-      }
-    };
-    
-    setPhysicsResponse(mockResponse);
-    setShowModal(true);
-    console.log('🎉 Mock modal opened');
-  };
+  
 
   // Direct analysis function (bypasses form submission)
   const handleDirectAnalysis = async () => {
@@ -1045,22 +996,7 @@ const ScenarioSetup = () => {
           </div>
 
           <div className="form-actions">
-            <button 
-              type="button" 
-              onClick={testAPI}
-              className="btn-secondary"
-              style={{marginRight: '0.5rem'}}
-            >
-              🧪 Test Server
-            </button>
-            <button 
-              type="button" 
-              onClick={testModal}
-              className="btn-secondary"
-              style={{marginRight: '1rem'}}
-            >
-              🎭 Test Modal
-            </button>
+            
             <button 
               type="button"
               onClick={handleDirectAnalysis}
