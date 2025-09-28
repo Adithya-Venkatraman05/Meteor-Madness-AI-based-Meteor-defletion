@@ -40,7 +40,7 @@
   font-size: 2rem;
   font-weight: bold;
   margin-bottom: 0.5rem;
-  background: linear-gradient(45deg, #ff6b35, #f7931e, #ffcd3c);
+  background: linear-gradient(45deg, #e2e2e2, #b4b4b4ff, #454545);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -121,13 +121,13 @@
 
 .form-group input.error,
 .form-group select.error {
-  border-color: #ff6b35;
+  border-color: #b4b4b4ff;
   background: rgba(255, 107, 53, 0.1);
 }
 
 .error-message {
   display: block;
-  color: #ff6b35;
+  color: #b4b4b4ff;
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
@@ -155,7 +155,7 @@
 }
 
 .create-btn {
-  background: linear-gradient(45deg, #ff6b35, #f7931e);
+  background: linear-gradient(45deg, #b4b4b4ff, #787878);
   border: none;
   color: white;
   padding: 0.8rem 2.5rem;
