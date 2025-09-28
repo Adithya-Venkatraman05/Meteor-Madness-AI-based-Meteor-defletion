@@ -1374,6 +1374,11 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.param-row:last-child {
+  margin-bottom: 0;
 }
 
 .param-input {

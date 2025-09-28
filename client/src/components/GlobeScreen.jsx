@@ -26,12 +26,26 @@ const GlobeScreen = () => {
   // Tab management
   const [activeTab, setActiveTab] = useState('results');
   
-  // Editable parameters for rerun simulation
+  // Editable parameters for rerun simulation - initialized empty, will be populated from localStorage
   const [editableParams, setEditableParams] = useState({
     diameter: '',
     mass: '',
     density: '',
-    composition: '',
+    composition: 'ROCKY',
+    absolute_magnitude: '',
+    geometric_albedo: '',
+    rotation_period: '',
+    eccentricity: '',
+    semi_major_axis: '',
+    perihelion_distance: '',
+    aphelion_distance: '',
+    inclination: '',
+    longitude_ascending_node: '',
+    argument_perihelion: '',
+    mean_anomaly: '',
+    orbital_period: '',
+    mean_motion: '',
+    moid: '',
     velocity_kms: 25.0,
     angle_degrees: 45,
     impact_latitude: '',
@@ -140,6 +154,27 @@ const GlobeScreen = () => {
     // Initialize with quick locations
     setMarkers(quickLocations);
     
+    // Set initial coordinates to Rio de Janeiro from provided data
+    const initialCoords = {
+      lat: (-22.9068).toFixed(4),
+      lng: (-43.1729).toFixed(4)
+    };
+    setSelectedCoordinates(initialCoords);
+    setManualCoords(initialCoords);
+    
+    // Add initial marker
+    setMarkers(prev => {
+      const filtered = prev.filter(marker => marker.name !== 'Selected Location');
+      return [...filtered, {
+        name: 'Selected Location',
+        lat: -22.9068,
+        lng: -43.1729,
+        color: '#ff0080',
+        size: 0.3,
+        type: 'selected'
+      }];
+    });
+    
     // Load stored asteroid parameters
     const storedParams = localStorage.getItem('asteroidParameters');
     if (storedParams) {
@@ -203,17 +238,37 @@ const GlobeScreen = () => {
         if (data.asteroid_parameters) {
           setAsteroidParameters(data.asteroid_parameters);
           
-          // Populate editable parameters for rerun simulation
+          // Populate ALL editable parameters for rerun simulation from localStorage data
           setEditableParams(prev => ({
             ...prev,
+            // Physical properties
             diameter: data.asteroid_parameters.diameter || '',
             mass: data.asteroid_parameters.mass || '',
             density: data.asteroid_parameters.density || '',
-            composition: data.asteroid_parameters.composition || '',
+            composition: data.asteroid_parameters.composition || 'ROCKY',
+            absolute_magnitude: data.asteroid_parameters.absolute_magnitude || '',
+            geometric_albedo: data.asteroid_parameters.geometric_albedo || '',
+            rotation_period: data.asteroid_parameters.rotation_period || '',
+            
+            // Orbital elements
+            eccentricity: data.asteroid_parameters.eccentricity !== undefined ? data.asteroid_parameters.eccentricity : '',
+            semi_major_axis: data.asteroid_parameters.semi_major_axis || '',
+            perihelion_distance: data.asteroid_parameters.perihelion_distance || '',
+            aphelion_distance: data.asteroid_parameters.aphelion_distance || '',
+            inclination: data.asteroid_parameters.inclination !== undefined ? data.asteroid_parameters.inclination : '',
+            longitude_ascending_node: data.asteroid_parameters.longitude_ascending_node || '',
+            argument_perihelion: data.asteroid_parameters.argument_perihelion || '',
+            mean_anomaly: data.asteroid_parameters.mean_anomaly || '',
+            orbital_period: data.asteroid_parameters.orbital_period || '',
+            mean_motion: data.asteroid_parameters.mean_motion || '',
+            moid: data.asteroid_parameters.moid !== undefined ? data.asteroid_parameters.moid : '',
+            
+            // Impact conditions
             velocity_kms: data.velocity_kms || 25.0,
             angle_degrees: data.angle_degrees || 45,
             impact_latitude: data.impact_location?.latitude || '',
-            impact_longitude: data.impact_location?.longitude || ''
+            impact_longitude: data.impact_location?.longitude || '',
+            population_density: data.population_density || 100
           }));
         }
         
@@ -280,7 +335,31 @@ const GlobeScreen = () => {
   }, [circleData]);
   
   // Test function to create a simple visible polygon
-  
+  const createTestPolygon = () => {
+    if (selectedCoordinates) {
+      const testPolygon = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[
+            [parseFloat(selectedCoordinates.lng) - 1, parseFloat(selectedCoordinates.lat) - 1],
+            [parseFloat(selectedCoordinates.lng) + 1, parseFloat(selectedCoordinates.lat) - 1],
+            [parseFloat(selectedCoordinates.lng) + 1, parseFloat(selectedCoordinates.lat) + 1],
+            [parseFloat(selectedCoordinates.lng) - 1, parseFloat(selectedCoordinates.lat) + 1],
+            [parseFloat(selectedCoordinates.lng) - 1, parseFloat(selectedCoordinates.lat) - 1]
+          ]]
+        },
+        properties: {
+          name: 'Test Square',
+          color: '#ff0000',
+          radius: 100,
+          effectType: 'test'
+        }
+      };
+      console.log('🧪 Setting test polygon:', testPolygon);
+      setCircleData([testPolygon]);
+    }
+  };
   
   // Note: Physics analysis is now loaded from ScenarioSetup via localStorage
   // If user wants to re-analyze, they can do so manually
@@ -302,33 +381,106 @@ const GlobeScreen = () => {
 
   // Function to perform physics analysis
   const performPhysicsAnalysis = async () => {
-    if (!selectedCoordinates || !asteroidParameters.diameter) return;
+    // Use editable parameters as primary source
+    const currentDiameter = editableParams.diameter || asteroidParameters.diameter;
+    const currentLat = editableParams.impact_latitude || selectedCoordinates?.lat;
+    const currentLng = editableParams.impact_longitude || selectedCoordinates?.lng;
+    
+    if (!currentDiameter || !currentLat || !currentLng) {
+      setAnalysisError('Missing required parameters: diameter, latitude, and longitude are required');
+      return;
+    }
     
     setIsAnalyzing(true);
     setAnalysisError(null);
     
+    // Clear existing visualization to prevent doubling
+    setCircleData([]);
+    
     try {
       const apiParams = new URLSearchParams();
       
-      // Required parameters
-      apiParams.append('diameter', asteroidParameters.diameter.toString());
+      // Required parameters - use editable params first
+      apiParams.append('diameter', currentDiameter.toString());
       
-      // Optional parameters from asteroid data
-      if (asteroidParameters.mass) apiParams.append('mass', asteroidParameters.mass.toString());
-      if (asteroidParameters.density) apiParams.append('density', asteroidParameters.density.toString());
-      if (asteroidParameters.composition) apiParams.append('composition', asteroidParameters.composition);
+      // Physical parameters - prioritize editable params
+      if (editableParams.mass !== undefined && editableParams.mass !== '') apiParams.append('mass', editableParams.mass.toString());
+      else if (asteroidParameters.mass) apiParams.append('mass', asteroidParameters.mass.toString());
       
-      // Impact parameters
-      if (scenarioData.velocity_kms) apiParams.append('velocity', (scenarioData.velocity_kms * 1000).toString());
-      if (scenarioData.angle_degrees) apiParams.append('angle', scenarioData.angle_degrees.toString());
+      if (editableParams.density !== undefined && editableParams.density !== '') apiParams.append('density', editableParams.density.toString());
+      else if (asteroidParameters.density) apiParams.append('density', asteroidParameters.density.toString());
       
-      // Impact location coordinates
-      apiParams.append('impact_latitude', selectedCoordinates.lat.toString());
-      apiParams.append('impact_longitude', selectedCoordinates.lng.toString());
+      if (editableParams.composition) apiParams.append('composition', editableParams.composition);
+      else if (asteroidParameters.composition) apiParams.append('composition', asteroidParameters.composition);
+      
+      if (editableParams.absolute_magnitude !== undefined && editableParams.absolute_magnitude !== '') apiParams.append('absolute_magnitude', editableParams.absolute_magnitude.toString());
+      else if (asteroidParameters.absolute_magnitude) apiParams.append('absolute_magnitude', asteroidParameters.absolute_magnitude.toString());
+      
+      if (editableParams.geometric_albedo !== undefined && editableParams.geometric_albedo !== '') apiParams.append('geometric_albedo', editableParams.geometric_albedo.toString());
+      else if (asteroidParameters.geometric_albedo) apiParams.append('geometric_albedo', asteroidParameters.geometric_albedo.toString());
+      
+      if (editableParams.rotation_period !== undefined && editableParams.rotation_period !== '') apiParams.append('rotation_period', editableParams.rotation_period.toString());
+      else if (asteroidParameters.rotation_period) apiParams.append('rotation_period', asteroidParameters.rotation_period.toString());
+      
+      // Orbital elements - prioritize editable params
+      if (editableParams.eccentricity !== undefined && editableParams.eccentricity !== '') apiParams.append('eccentricity', editableParams.eccentricity.toString());
+      else if (asteroidParameters.eccentricity !== undefined) apiParams.append('eccentricity', asteroidParameters.eccentricity.toString());
+      
+      if (editableParams.semi_major_axis !== undefined && editableParams.semi_major_axis !== '') apiParams.append('semi_major_axis', editableParams.semi_major_axis.toString());
+      else if (asteroidParameters.semi_major_axis) apiParams.append('semi_major_axis', asteroidParameters.semi_major_axis.toString());
+      
+      if (editableParams.perihelion_distance !== undefined && editableParams.perihelion_distance !== '') apiParams.append('perihelion_distance', editableParams.perihelion_distance.toString());
+      else if (asteroidParameters.perihelion_distance) apiParams.append('perihelion_distance', asteroidParameters.perihelion_distance.toString());
+      
+      if (editableParams.aphelion_distance !== undefined && editableParams.aphelion_distance !== '') apiParams.append('aphelion_distance', editableParams.aphelion_distance.toString());
+      else if (asteroidParameters.aphelion_distance) apiParams.append('aphelion_distance', asteroidParameters.aphelion_distance.toString());
+      
+      if (editableParams.inclination !== undefined && editableParams.inclination !== '') apiParams.append('inclination', editableParams.inclination.toString());
+      else if (asteroidParameters.inclination !== undefined) apiParams.append('inclination', asteroidParameters.inclination.toString());
+      
+      if (editableParams.longitude_ascending_node !== undefined && editableParams.longitude_ascending_node !== '') apiParams.append('longitude_ascending_node', editableParams.longitude_ascending_node.toString());
+      else if (asteroidParameters.longitude_ascending_node) apiParams.append('longitude_ascending_node', asteroidParameters.longitude_ascending_node.toString());
+      
+      if (editableParams.argument_perihelion !== undefined && editableParams.argument_perihelion !== '') apiParams.append('argument_perihelion', editableParams.argument_perihelion.toString());
+      else if (asteroidParameters.argument_perihelion) apiParams.append('argument_perihelion', asteroidParameters.argument_perihelion.toString());
+      
+      if (editableParams.mean_anomaly !== undefined && editableParams.mean_anomaly !== '') apiParams.append('mean_anomaly', editableParams.mean_anomaly.toString());
+      else if (asteroidParameters.mean_anomaly) apiParams.append('mean_anomaly', asteroidParameters.mean_anomaly.toString());
+      
+      if (editableParams.orbital_period !== undefined && editableParams.orbital_period !== '') apiParams.append('orbital_period', editableParams.orbital_period.toString());
+      else if (asteroidParameters.orbital_period) apiParams.append('orbital_period', asteroidParameters.orbital_period.toString());
+      
+      if (editableParams.mean_motion !== undefined && editableParams.mean_motion !== '') apiParams.append('mean_motion', editableParams.mean_motion.toString());
+      else if (asteroidParameters.mean_motion) apiParams.append('mean_motion', asteroidParameters.mean_motion.toString());
+      
+      if (editableParams.moid !== undefined && editableParams.moid !== '') apiParams.append('moid', editableParams.moid.toString());
+      else if (asteroidParameters.moid !== undefined) apiParams.append('moid', asteroidParameters.moid.toString());
+      
+      // Impact parameters - prioritize editable params
+      const velocity = editableParams.velocity_kms || scenarioData.velocity_kms || 25.0;
+      const angle = editableParams.angle_degrees !== undefined ? editableParams.angle_degrees : (scenarioData.angle_degrees || 45);
+      
+      apiParams.append('velocity', (velocity * 1000).toString());
+      apiParams.append('angle', angle.toString());
+      
+      // Impact location coordinates - use current values
+      apiParams.append('impact_latitude', currentLat.toString());
+      apiParams.append('impact_longitude', currentLng.toString());
       apiParams.append('population_density', editableParams.population_density.toString());
       
       const apiUrl = `http://localhost:8001/physics/impact-analysis?${apiParams}`;
       console.log('🌐 Physics API URL:', apiUrl);
+      console.log('📊 Using parameters:', {
+        diameter: currentDiameter,
+        mass: editableParams.mass,
+        density: editableParams.density,
+        composition: editableParams.composition,
+        velocity_kms: editableParams.velocity_kms,
+        angle_degrees: editableParams.angle_degrees,
+        impact_latitude: currentLat,
+        impact_longitude: currentLng,
+        population_density: editableParams.population_density
+      });
       
       const response = await fetch(apiUrl);
       if (!response.ok) {
@@ -340,9 +492,9 @@ const GlobeScreen = () => {
       
       setPhysicsResponse(data);
       
-      // Update visualization with damage zones
+      // Update visualization with damage zones using current coordinates
       if (data.damage_analysis?.impact_radii_by_severity) {
-        updateHazardousAreaVisualization(parseFloat(selectedCoordinates.lat), parseFloat(selectedCoordinates.lng), data.damage_analysis.impact_radii_by_severity);
+        updateHazardousAreaVisualization(parseFloat(currentLat), parseFloat(currentLng), data.damage_analysis.impact_radii_by_severity);
       }
       
     } catch (error) {
@@ -480,8 +632,8 @@ const GlobeScreen = () => {
     // Update editable parameters with new coordinates
     setEditableParams(prev => ({
       ...prev,
-      impact_latitude: lat.toFixed(4),
-      impact_longitude: lng.toFixed(4)
+      impact_latitude: parseFloat(lat.toFixed(4)),
+      impact_longitude: parseFloat(lng.toFixed(4))
     }));
     
     // Add or update user marker
@@ -497,9 +649,10 @@ const GlobeScreen = () => {
       }];
     });
     
-    // Clear physics response when coordinates change
+    // Clear physics response and visualization when coordinates change
     setPhysicsResponse(null);
     setAnalysisError(null);
+    setCircleData([]);
   };
 
   const validateCoordinates = () => {
@@ -556,13 +709,14 @@ const GlobeScreen = () => {
     // Update editable parameters with new coordinates
     setEditableParams(prev => ({
       ...prev,
-      impact_latitude: location.lat.toFixed(4),
-      impact_longitude: location.lng.toFixed(4)
+      impact_latitude: parseFloat(location.lat.toFixed(4)),
+      impact_longitude: parseFloat(location.lng.toFixed(4))
     }));
     
-    // Clear physics response when coordinates change
+    // Clear physics response and visualization when coordinates change
     setPhysicsResponse(null);
     setAnalysisError(null);
+    setCircleData([]);
     
     // Animate to location
     if (globeRef.current) {
@@ -602,6 +756,9 @@ const GlobeScreen = () => {
           </Link>
           <h1 className="globe-title">Impact Analysis Visualization</h1>
           <p className="globe-subtitle">Select location and view real-time physics analysis</p>
+          <button onClick={createTestPolygon} style={{marginLeft: '10px', padding: '5px 10px', background: '#ff6b35', color: 'white', border: 'none', borderRadius: '4px'}}>
+            🧪 Test Polygon
+          </button>
         </div>
 
         <div className="globe-content">
@@ -883,54 +1040,216 @@ const GlobeScreen = () => {
                       </div>
                     </div>
                     
-                    {/* Asteroid Parameters */}
+                    {/* Physical Properties */}
                     <div className="param-group">
-                      <h4>🪨 Asteroid Properties</h4>
-                      <div className="param-input">
-                        <label>Diameter (m)</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="1"
-                          value={editableParams.diameter}
-                          onChange={(e) => setEditableParams(prev => ({...prev, diameter: e.target.value}))}
-                          placeholder="e.g., 100"
-                        />
+                      <h4>🪨 Physical Properties</h4>
+                      <div className="param-row">
+                        <div className="param-input">
+                          <label>Diameter (m)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="1"
+                            value={editableParams.diameter}
+                            onChange={(e) => setEditableParams(prev => ({...prev, diameter: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                        <div className="param-input">
+                          <label>Mass (kg)</label>
+                          <input
+                            type="number"
+                            step="1000000"
+                            min="1"
+                            value={editableParams.mass}
+                            onChange={(e) => setEditableParams(prev => ({...prev, mass: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                      </div>
+                      <div className="param-row">
+                        <div className="param-input">
+                          <label>Density (kg/m³)</label>
+                          <input
+                            type="number"
+                            step="100"
+                            min="100"
+                            value={editableParams.density}
+                            onChange={(e) => setEditableParams(prev => ({...prev, density: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                        <div className="param-input">
+                          <label>Composition</label>
+                          <select
+                            value={editableParams.composition}
+                            onChange={(e) => setEditableParams(prev => ({...prev, composition: e.target.value}))}
+                          >
+                            <option value="ROCKY">Rocky</option>
+                            <option value="METALLIC">Metallic</option>
+                            <option value="CARBONACEOUS">Carbonaceous</option>
+                            <option value="ICY">Icy</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="param-row">
+                        <div className="param-input">
+                          <label>Absolute Magnitude (H)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editableParams.absolute_magnitude}
+                            onChange={(e) => setEditableParams(prev => ({...prev, absolute_magnitude: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                        <div className="param-input">
+                          <label>Geometric Albedo</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="1"
+                            value={editableParams.geometric_albedo}
+                            onChange={(e) => setEditableParams(prev => ({...prev, geometric_albedo: parseFloat(e.target.value)}))}
+                          />
+                        </div>
                       </div>
                       <div className="param-input">
-                        <label>Mass (kg)</label>
+                        <label>Rotation Period (hours)</label>
                         <input
                           type="number"
-                          step="1000"
-                          min="1"
-                          value={editableParams.mass}
-                          onChange={(e) => setEditableParams(prev => ({...prev, mass: e.target.value}))}
-                          placeholder="e.g., 1000000"
+                          step="0.001"
+                          min="0"
+                          value={editableParams.rotation_period}
+                          onChange={(e) => setEditableParams(prev => ({...prev, rotation_period: parseFloat(e.target.value)}))}
                         />
                       </div>
+                    </div>
+                    
+                    {/* Orbital Elements */}
+                    <div className="param-group">
+                      <h4>🛰️ Orbital Elements</h4>
+                      <div className="param-row">
+                        <div className="param-input">
+                          <label>Eccentricity</label>
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            max="0.99"
+                            value={editableParams.eccentricity}
+                            onChange={(e) => setEditableParams(prev => ({...prev, eccentricity: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                        <div className="param-input">
+                          <label>Semi-major Axis (AU)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0.1"
+                            value={editableParams.semi_major_axis}
+                            onChange={(e) => setEditableParams(prev => ({...prev, semi_major_axis: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                      </div>
+                      <div className="param-row">
+                        <div className="param-input">
+                          <label>Perihelion Distance (AU)</label>
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            value={editableParams.perihelion_distance}
+                            onChange={(e) => setEditableParams(prev => ({...prev, perihelion_distance: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                        <div className="param-input">
+                          <label>Aphelion Distance (AU)</label>
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            value={editableParams.aphelion_distance}
+                            onChange={(e) => setEditableParams(prev => ({...prev, aphelion_distance: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                      </div>
+                      <div className="param-row">
+                        <div className="param-input">
+                          <label>Inclination (°)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="180"
+                            value={editableParams.inclination}
+                            onChange={(e) => setEditableParams(prev => ({...prev, inclination: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                        <div className="param-input">
+                          <label>Longitude Asc. Node (°)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="360"
+                            value={editableParams.longitude_ascending_node}
+                            onChange={(e) => setEditableParams(prev => ({...prev, longitude_ascending_node: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                      </div>
+                      <div className="param-row">
+                        <div className="param-input">
+                          <label>Argument Perihelion (°)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="360"
+                            value={editableParams.argument_perihelion}
+                            onChange={(e) => setEditableParams(prev => ({...prev, argument_perihelion: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                        <div className="param-input">
+                          <label>Mean Anomaly (°)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="360"
+                            value={editableParams.mean_anomaly}
+                            onChange={(e) => setEditableParams(prev => ({...prev, mean_anomaly: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                      </div>
+                      <div className="param-row">
+                        <div className="param-input">
+                          <label>Orbital Period (days)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            value={editableParams.orbital_period}
+                            onChange={(e) => setEditableParams(prev => ({...prev, orbital_period: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                        <div className="param-input">
+                          <label>Mean Motion (°/day)</label>
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            value={editableParams.mean_motion}
+                            onChange={(e) => setEditableParams(prev => ({...prev, mean_motion: parseFloat(e.target.value)}))}
+                          />
+                        </div>
+                      </div>
                       <div className="param-input">
-                        <label>Density (kg/m³)</label>
+                        <label>MOID (AU)</label>
                         <input
                           type="number"
-                          step="100"
-                          min="100"
-                          value={editableParams.density}
-                          onChange={(e) => setEditableParams(prev => ({...prev, density: e.target.value}))}
-                          placeholder="e.g., 2700"
+                          step="0.001"
+                          min="0"
+                          value={editableParams.moid}
+                          onChange={(e) => setEditableParams(prev => ({...prev, moid: parseFloat(e.target.value)}))}
                         />
-                      </div>
-                      <div className="param-input">
-                        <label>Composition</label>
-                        <select
-                          value={editableParams.composition}
-                          onChange={(e) => setEditableParams(prev => ({...prev, composition: e.target.value}))}
-                        >
-                          <option value="">Select composition</option>
-                          <option value="stony">Stony</option>
-                          <option value="iron">Iron</option>
-                          <option value="carbonaceous">Carbonaceous</option>
-                          <option value="mixed">Mixed</option>
-                        </select>
                       </div>
                     </div>
                     
@@ -976,6 +1295,13 @@ const GlobeScreen = () => {
                       <button 
                         className="rerun-btn"
                         onClick={() => {
+                          console.log('🔄 Starting rerun simulation with parameters:', editableParams);
+                          
+                          // Clear existing physics response and visualization
+                          setPhysicsResponse(null);
+                          setAnalysisError(null);
+                          setCircleData([]);
+                          
                           // Update coordinates if changed
                           if (editableParams.impact_latitude && editableParams.impact_longitude) {
                             const newCoords = {
@@ -984,15 +1310,41 @@ const GlobeScreen = () => {
                             };
                             setSelectedCoordinates(newCoords);
                             setManualCoords(newCoords);
+                            
+                            // Update marker position
+                            setMarkers(prev => {
+                              const filtered = prev.filter(marker => marker.name !== 'Selected Location');
+                              return [...filtered, {
+                                name: 'Selected Location',
+                                lat: parseFloat(newCoords.lat),
+                                lng: parseFloat(newCoords.lng),
+                                color: '#ff0080',
+                                size: 0.3,
+                                type: 'selected'
+                              }];
+                            });
                           }
                           
-                          // Update asteroid parameters
+                          // Update asteroid parameters with all editable parameters
                           const updatedAsteroidParams = {
-                            ...asteroidParameters,
-                            diameter: parseFloat(editableParams.diameter) || asteroidParameters.diameter,
-                            mass: parseFloat(editableParams.mass) || asteroidParameters.mass,
-                            density: parseFloat(editableParams.density) || asteroidParameters.density,
-                            composition: editableParams.composition || asteroidParameters.composition
+                            diameter: editableParams.diameter,
+                            mass: editableParams.mass,
+                            density: editableParams.density,
+                            composition: editableParams.composition,
+                            absolute_magnitude: editableParams.absolute_magnitude,
+                            geometric_albedo: editableParams.geometric_albedo,
+                            rotation_period: editableParams.rotation_period,
+                            eccentricity: editableParams.eccentricity,
+                            semi_major_axis: editableParams.semi_major_axis,
+                            perihelion_distance: editableParams.perihelion_distance,
+                            aphelion_distance: editableParams.aphelion_distance,
+                            inclination: editableParams.inclination,
+                            longitude_ascending_node: editableParams.longitude_ascending_node,
+                            argument_perihelion: editableParams.argument_perihelion,
+                            mean_anomaly: editableParams.mean_anomaly,
+                            orbital_period: editableParams.orbital_period,
+                            mean_motion: editableParams.mean_motion,
+                            moid: editableParams.moid
                           };
                           setAsteroidParameters(updatedAsteroidParams);
                           
@@ -1008,7 +1360,7 @@ const GlobeScreen = () => {
                           // Switch to results tab
                           setActiveTab('results');
                         }}
-                        disabled={isAnalyzing || !editableParams.diameter || !editableParams.impact_latitude || !editableParams.impact_longitude}
+                        disabled={isAnalyzing || !editableParams.diameter || editableParams.impact_latitude === '' || editableParams.impact_longitude === ''}
                       >
                         {isAnalyzing ? '🔬 Running...' : '🚀 Run Simulation'}
                       </button>
@@ -1016,21 +1368,32 @@ const GlobeScreen = () => {
                       <button 
                         className="reset-btn"
                         onClick={() => {
-                          // Reset to original values
-                          const originalData = JSON.parse(localStorage.getItem('simulationData') || '{}');
-                          if (originalData.asteroid_parameters) {
-                            setEditableParams({
-                              diameter: originalData.asteroid_parameters.diameter || '',
-                              mass: originalData.asteroid_parameters.mass || '',
-                              density: originalData.asteroid_parameters.density || '',
-                              composition: originalData.asteroid_parameters.composition || '',
-                              velocity_kms: originalData.velocity_kms || 25.0,
-                              angle_degrees: originalData.angle_degrees || 45,
-                              impact_latitude: originalData.impact_location?.latitude || '',
-                              impact_longitude: originalData.impact_location?.longitude || '',
-                              population_density: 100
-                            });
-                          }
+                          // Reset to provided asteroid values
+                          setEditableParams({
+                            diameter: 1500,
+                            mass: 8835729338221.293,
+                            density: 5000,
+                            composition: 'METALLIC',
+                            absolute_magnitude: 16.08,
+                            geometric_albedo: 0.25,
+                            rotation_period: 3.065,
+                            eccentricity: 0.56,
+                            semi_major_axis: 1.47,
+                            perihelion_distance: 0.647,
+                            aphelion_distance: 2.29,
+                            inclination: 6.35,
+                            longitude_ascending_node: 35.5,
+                            argument_perihelion: 286,
+                            mean_anomaly: 114,
+                            orbital_period: 652,
+                            mean_motion: 0.552,
+                            moid: 0.026,
+                            velocity_kms: 29.78,
+                            angle_degrees: 33.175,
+                            impact_latitude: -22.9068,
+                            impact_longitude: -43.1729,
+                            population_density: 100
+                          });
                         }}
                       >
                         🔄 Reset to Original
