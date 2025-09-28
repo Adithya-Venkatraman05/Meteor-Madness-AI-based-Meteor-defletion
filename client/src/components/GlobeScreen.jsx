@@ -26,6 +26,9 @@ const GlobeScreen = () => {
   // Tab management
   const [activeTab, setActiveTab] = useState('results');
   
+  // Globe interaction mode for rerun simulation
+  const [isSelectingLocation, setIsSelectingLocation] = useState(false);
+  
   // Editable parameters for rerun simulation - initialized empty, will be populated from localStorage
   const [editableParams, setEditableParams] = useState({
     diameter: '',
@@ -602,6 +605,32 @@ const GlobeScreen = () => {
     const { lat, lng } = coords;
     const newCoordinates = { lat: lat.toFixed(4), lng: lng.toFixed(4) };
     
+    // If in location selection mode (rerun simulation), update editable params and exit selection mode
+    if (isSelectingLocation) {
+      setEditableParams(prev => ({
+        ...prev,
+        impact_latitude: parseFloat(lat.toFixed(4)),
+        impact_longitude: parseFloat(lng.toFixed(4))
+      }));
+      setIsSelectingLocation(false);
+      
+      // Add visual feedback with temporary marker
+      setMarkers(prev => {
+        const filtered = prev.filter(marker => marker.name !== 'Rerun Location');
+        return [...filtered, {
+          name: 'Rerun Location',
+          lat: parseFloat(lat.toFixed(4)),
+          lng: parseFloat(lng.toFixed(4)),
+          color: '#00ff80',
+          size: 0.15,
+          type: 'rerun'
+        }];
+      });
+      
+      return; // Exit early to avoid normal globe click behavior
+    }
+    
+    // Normal globe click behavior
     setSelectedCoordinates(newCoordinates);
     setManualCoords({ lat: lat.toFixed(4), lng: lng.toFixed(4) });
     
@@ -736,7 +765,7 @@ const GlobeScreen = () => {
         </div>
 
         <div className="globe-content">
-          <div className="globe-wrapper">
+          <div className={`globe-wrapper ${isSelectingLocation ? 'selection-mode' : ''}`}>
             <Globe
               ref={globeRef}
               globeImageUrl="//unpkg.com/three-globe/example/img/earth-day.jpg"
@@ -1011,6 +1040,21 @@ const GlobeScreen = () => {
                             </button>
                           ))}
                         </div>
+                      </div>
+                      
+                      <div className="globe-selection-option">
+                        <button 
+                          className={`globe-select-btn ${isSelectingLocation ? 'active' : ''}`}
+                          onClick={() => setIsSelectingLocation(!isSelectingLocation)}
+                          title="Click on the globe to select coordinates"
+                        >
+                          {isSelectingLocation ? '🎯 Click on Globe (Active)' : '🌍 Select on Globe'}
+                        </button>
+                        {isSelectingLocation && (
+                          <p className="selection-hint">
+                            💡 Click anywhere on the globe to set impact coordinates
+                          </p>
+                        )}
                       </div>
                     </div>
                     
