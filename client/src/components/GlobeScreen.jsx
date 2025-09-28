@@ -413,10 +413,10 @@ const GlobeScreen = () => {
           let radiusKm = zone.radius_km || 0;
           
           // Cap extremely large radii for better visibility
-          if (radiusKm > 500) {
-            console.log(`⚠️ Zone ${index + 1} radius too large (${radiusKm}km), capping to 500km`);
-            radiusKm = 500;
-          }
+          // if (radiusKm > 500) {
+          //   console.log(`⚠️ Zone ${index + 1} radius too large (${radiusKm}km), capping to 500km`);
+          //   radiusKm = 500;
+          // }
           
           console.log(`📊 Processing zone ${index + 1}:`, { 
             description: zone.description, 
@@ -671,7 +671,7 @@ const GlobeScreen = () => {
                   <strong>${d.properties?.name || 'Damage Zone'}</strong><br/>
                   ${d.properties?.description || ''}<br/>
                   Radius: ${d.properties?.radius || 0} km<br/>
-                  Severity: ${d.properties?.severity || 0}/10<br/>
+                  Severity: ${d.properties?.severity || 0}<br/>
                   Effect: ${d.properties?.effectType || 'Unknown'}<br/>
                   Area: ~${Math.round(Math.PI * (d.properties?.radius || 0) * (d.properties?.radius || 0)).toLocaleString()} km²
                 </div>
@@ -806,7 +806,7 @@ const GlobeScreen = () => {
                                 </div>
                                 <div className="zone-stats">
                                   <span className="stat">{(zone.radius_km || 0).toFixed(1)} km</span>
-                                  <span className="stat">{zone.severity_level || 0}/10</span>
+                                  <span className="stat">{zone.severity_level || 0}</span>
                                 </div>
                               </div>
                             ))}
